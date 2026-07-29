@@ -14,6 +14,10 @@ It implements SiroMix Constitution v1.1.0 principles for canonical data, parse-o
 
 Exam Creation remains the lifecycle orchestrator and decides whether an ingestion result permits AI processing according to the severity contract defined here. AI Processing consumes only a successful Canonical Document version; it does not inspect the DOCX or parser output.
 
+**Specification Status:** Implementation Ready. The constitution check, Exam Creation and AI Processing boundary reconciliation, Lyra review, and architecture/security decisions are complete.
+
+**Post-Reconciliation Constitution Check:** Passed against Constitution v1.1.0. DOCX Ingestion remains the sole Canonical Document owner; downstream AI consumes only successful compatible versions and never DOCX internals; security, deterministic reuse, no-silent-loss, tenant isolation, retention, local parity, and atomic handoff rules remain intact.
+
 ## 3. Related Specifications
 
 - **Exam Creation:** `/specs/exam-creation/spec.md` is the only current neighboring feature specification. Its one-source, canonicalization, upload security, ingestion blocker/warning, retry, retention, authorization, observability, local-parity, performance, and handoff requirements constrain this feature.

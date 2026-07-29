@@ -34,6 +34,7 @@ Parser internals, model quality evaluation, mixing algorithms, and final publish
 | AC-022 | Exact retention, recoverable deletion, tenant/legal deletion, and legal-hold schedules are enforced | Integration / Time-based | Pending |
 | AC-023 | Tenant Admin and platform-support permissions and audited support grants enforce least privilege | Security / Integration / E2E | Pending |
 | AC-024 | P95 latency, availability telemetry, cost attribution, 80% warning, cap blocking, and audited cap increase work | Performance / Integration / E2E | Pending |
+| AC-025 | One active cap request, Teacher status/withdrawal, seven-day expiry, Admin decision, atomic cap update, idempotent notification, authorization, and Draft preservation work | Unit / Integration / Workflow / E2E / Security | Pending |
 
 ## Unit Tests
 
@@ -49,6 +50,8 @@ Parser internals, model quality evaluation, mixing algorithms, and final publish
 - Verify Teacher, Tenant Admin, dual-role Admin/Teacher, platform support with/without grant, unauthorized-user, and tenant-boundary decisions.
 - Verify metadata requirements separately at processing and approval gates.
 - Verify 80% cost warning and hard-cap calculations include repair attempts.
+- Verify cap-request states and transitions, one-active-request uniqueness, no Teacher cap-amount input, Admin-entered positive new cap above the current cap, seven-day expiry, requester withdrawal, and terminal-state immutability.
+- Verify only same-tenant authorized Teachers submit/withdraw and only same-tenant authorized Tenant Admins approve/reject; submission never changes the cap.
 
 ## Integration Tests
 
@@ -65,6 +68,9 @@ Parser internals, model quality evaluation, mixing algorithms, and final publish
 - Confirm logs/metrics/audit metadata omit full document, prompt, question/answer, credential, and provider payload content.
 - Confirm provider usage/cost metadata is attributed when supplied.
 - Confirm AI attempts are blocked at the USD 1 equivalent workflow cap, editing/approval remain available, and only an authorized Tenant Admin can raise the cap through an audit event.
+- Confirm cap-request submission is idempotent, returns the current active request, preserves Draft access, and records no cap change.
+- Confirm Admin approval atomically updates the workflow cap, decision/audit record, and outbox event; rejection leaves the cap unchanged.
+- Confirm duplicate outbox delivery or AI acknowledgement publishes one logical approved cap change.
 - Confirm retention schedules for each record/object class, 30-day recovery, 90-day candidate inactivity, 7-day temporary payloads, 1-year attempt metadata, 7-year audit events, tenant/legal deletion, and legal holds.
 - Confirm time-limited support grants expire and every content access is tenant-scoped and audited.
 
@@ -82,6 +88,8 @@ Parser internals, model quality evaluation, mixing algorithms, and final publish
 - Regeneration records a new attempt and candidate while preserving current Draft and approved versions.
 - Post-Draft source replacement starts a linked workflow with one new source and never mutates or adds a source to the original workflow.
 - Interrupted workflow resumes from durable state after worker/process restart.
+- Pending cap request expires after seven days; duplicate/concurrent submit/withdraw/approve/reject and worker restart converge on one valid state and one cap outcome.
+- Notification delivery retries durably after interruption without reopening a rejected/cancelled/expired request or duplicating an approved cap update.
 
 ## End-to-End Tests
 
@@ -100,6 +108,9 @@ Parser internals, model quality evaluation, mixing algorithms, and final publish
 - Draft-only workflow cannot enter mixing or publishing; approved exact-version handoff succeeds.
 - Tenant Admin can view status/audit, retry, cancel unapproved work, delete under policy, and raise the cost cap but cannot perform Teacher-only content actions; dual-role behavior and platform-support grants work as specified.
 - Cost warning appears at 80%, the cap blocks only further AI attempts, and an audited authorized increase permits a later attempt.
+- Cap-blocked Teacher submits **Request an Admin cap increase**, sees sent/pending status without implied approval, continues editing the existing Draft, and cannot create a duplicate active request.
+- Same-tenant Admin sees the pending request, explicitly approves or rejects it, and the Teacher sees the resulting status; approval permits a later AI attempt only after the cap-change handoff succeeds.
+- Teacher withdraws a pending request; an undecided request expires after seven days; either terminal state permits a later new request while preserving audit history.
 - Keyboard-only user can complete the critical journey and perceive progress, navigator status, errors, warning acknowledgements, save state, comparison changes, and approval confirmation programmatically.
 - Narrow-screen user can fully edit complex content using the navigator drawer and complete a sequentially reflowed candidate comparison without information loss.
 
@@ -116,6 +127,7 @@ Parser internals, model quality evaluation, mixing algorithms, and final publish
 - Retention runs too early/late, recovery-period restoration, legal-hold suppression, tenant/legal deletion, and raw-provider-response removal.
 - Admin attempts Teacher-only actions; platform support accesses content without, outside, or after an audited grant.
 - Missing cost, 80% threshold crossing, hard-cap crossing, unauthorized increase, and editing/approval while capped.
+- Duplicate/misrouted/stale/expired/cancelled/already-decided/cross-tenant cap request; invalid Admin-entered new cap; unauthorized submit/withdraw/approve/reject; concurrent decisions; delayed/duplicate notification; and submission incorrectly displayed as approval.
 - Unauthorized/cross-tenant access for every resource and mutation.
 - Concurrent edits, duplicate approval, stale approval, incomplete-state approval, and approval transaction failure.
 - Attempted silent replacement of saved edits or approved versions, same-workflow second-source attachment, and unconfirmed linked source replacement.
@@ -131,6 +143,7 @@ Parser internals, model quality evaluation, mixing algorithms, and final publish
 - Multiple Draft candidates and linked one-source workflow fixtures covering regeneration, autosave revisions, source replacement, and candidate comparison.
 - Two tenants and role fixtures covering authorized Teacher, scoped Admin policy, unauthorized user, and cross-tenant attempts.
 - Clock-controlled retention fixtures and AI-cost fixtures below, at, and above warning/cap thresholds.
+- Clock-controlled cap-request fixtures for pending, approved, rejected, withdrawn, exact seven-day expiry, post-expiry, duplicate/concurrent decisions, outbox retry, and cross-tenant authorization.
 - Performance fixtures for valid DOCX inputs through 10 MB and generated Drafts through 50 questions.
 - Fault-injection fixtures for storage, database, workflow restart, provider, validation, preview, audit, and approval transaction failures.
 

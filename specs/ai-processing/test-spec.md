@@ -13,17 +13,17 @@ DOCX parsing/canonicalization, Draft editing/lifecycle, Master approval, Questio
 | AC-001 | Authorized compatible successful canonical input starts; every ineligible/mismatched input invokes no provider | Contract / Workflow / Security | Pending |
 | AC-002 | No DOCX/XML/OMML/private fragment dependency or canonical mutation; only authorized assets and Presentation MathML are consumed | Boundary / Security | Pending |
 | AC-003 | Complete request/context/prompt/provider/schema/correlation/cost provenance validates and persists | Contract / Integration | Pending |
-| AC-004 | Extraction golden fixtures preserve meaning/order/answers/structures/provenance, add nothing, and classify ambiguity | Fidelity / Golden | Pending |
+| AC-004 | Extraction golden fixtures preserve meaning/order/answers/structures/provenance/explanations, add nothing, and enforce the approved ambiguity threshold | Fidelity / Golden | Pending |
 | AC-005 | Generation default/range/exact count and canonical-only grounding/claim validation work | Unit / Grounding / Workflow | Pending |
 | AC-006 | Only valid fixed A–D single-answer questions with consistent content/references pass | Schema / Domain | Pending |
-| AC-007 | Every required domain, duplicate, reference, provenance, identity, and order failure is detected/classified | Unit / Property / Contract | Pending |
+| AC-007 | Every required domain, duplicate, reference, provenance, identity, and order failure is detected deterministically without embeddings/RAG/validator AI | Unit / Property / Contract / Boundary | Pending |
 | AC-008 | Refusal/truncation/malformed/schema/incomplete/unsupported responses never hand off | Provider Contract / Workflow | Pending |
 | AC-009 | Eligible structural repair stops at two, revalidates fully, and accounts lineage/usage/cost | Workflow / Integration | Pending |
 | AC-010 | Domain-invalid processing stops and regeneration creates distinct immutable candidate identities | Workflow / Integration | Pending |
 | AC-011 | Transient provider retry stops at three total with backoff; permanent cases do not retry | Workflow / Fault Injection | Pending |
 | AC-012 | Duplicate delivery at every stage produces one logical side effect and no preventable rebilling | Idempotency / Integration | Pending |
 | AC-013 | Uncertain provider outcome reconciles or blocks redispatch under reservation/audit policy | Workflow / Provider Contract | Pending |
-| AC-014 | USD 1 cap, 80% warning, retry/repair/reservation accounting, Admin increase, and Draft non-blocking behavior work | Unit / Integration / Security | Pending |
+| AC-014 | USD 1 cap, 80% warning, retry/repair/reservation accounting, Exam Creation request boundary, approved cap notification, and Draft non-blocking behavior work | Unit / Integration / Security / Consumer Contract | Pending |
 | AC-015 | Token/unit/latency/pricing/reservation/final/USD reporting aggregates correctly and missing usage is explicit | Unit / Integration | Pending |
 | AC-016 | Durable Temporal stages and counters recover from restart with at-least-once safety | Workflow / Recovery | Pending |
 | AC-017 | Cancellation and terminal race are idempotent, preserve usage, and never leak a handoff | Workflow / Concurrency | Pending |
@@ -38,6 +38,7 @@ DOCX parsing/canonicalization, Draft editing/lifecycle, Master approval, Questio
 | AC-026 | Migration, dual-read, rejection, rollout, and rollback preserve immutable meaning | Migration / Compatibility | Pending |
 | AC-027 | AI_PROCESSING_PROFILE_V1 reports five-minute P95, availability, stage/provider/retry/token/cost metrics | Performance / Reliability | Pending |
 | AC-028 | Failure injection at every durable stage proves recovery, accounting, atomicity, and redaction | Fault Injection / Workflow | Pending |
+| AC-029 | Three-stage tracker, repair label, atomic Draft-ready transition, automatic Review & Edit entry, announcements, and narrow-screen stacking match the UX contract | UX Contract / Accessibility / Responsive E2E | Pending |
 
 ## Question JSON Schema Contract Tests
 
@@ -54,6 +55,8 @@ DOCX parsing/canonicalization, Draft editing/lifecycle, Master approval, Questio
 - Reject 4, 51, zero, negative, fractional, string, multiple-count, and unsupported mode parameters before provider invocation.
 - Verify deterministic context selection/order, mode constraints, template identity, and request hashes.
 - Verify extraction non-invention and generation canonical-only evidence rules.
+- Verify extraction blocks when question text, four options, one correct-answer relationship, assessable meaning, required structured content, or provenance is uncertain; warning is permitted only when meaning and answer integrity remain unaffected.
+- Verify extraction preserves valid source explanations, generation omits explanations by default, and no provider prompt requests or invents generation explanations.
 
 ## Extraction-Fidelity Tests
 
@@ -61,13 +64,16 @@ DOCX parsing/canonicalization, Draft editing/lifecycle, Master approval, Questio
 - Confirm question order, meaning, option/correct-answer relationships, structured references, and provenance remain equivalent.
 - Detect invented questions/options/answers, dropped/reordered questions, answer drift, lost references, unsupported content, incomplete questions, and ambiguity.
 - Verify ambiguous cases follow the approved warning-versus-blocking threshold and never silently infer missing answers.
+- Verify presentation-only ambiguity may warn only with a fully valid question contract; meaning, option, answer, or required-reference ambiguity always blocks.
 
 ## Generation-Grounding and Requested-Count Tests
 
 - Deterministic fake-provider results at counts 5, 15, and 50 plus each wrong-count/empty/incomplete case.
 - Every question/answer/explanation claim must be supported by declared canonical evidence.
+- Deterministically validate evidence presence and reference closure for every question, option claim needed for interpretation, correct answer, and preserved explanation.
 - Reject fabricated facts, unverifiable distractor claims that violate the approved grounding rule, references to other documents/world knowledge, and broken evidence references.
 - Verify repeated/near-duplicate questions and unsupported claims are domain-invalid.
+- Prove embeddings, external retrieval, broader RAG, and validator AI calls are not invoked.
 
 ## Domain-Validation Tests
 
@@ -102,21 +108,27 @@ DOCX parsing/canonicalization, Draft editing/lifecycle, Master approval, Questio
 - Verify one logical attempt/call/result/question set/charge/event/handoff per idempotency scope.
 - Lose acknowledgement before dispatch, during transmission, after provider acceptance, after response, and before durable response capture.
 - Provider supporting idempotency/status lookup reconciles without a second billable call.
-- Provider lacking reconciliation remains blocked until approved timeout/release; conservative reservation and audit prevent cap bypass.
+- Provider lacking reconciliation remains blocked, retains maximum estimated cost, and cannot redispatch automatically; only an explicit authorized new attempt after audited resolution/permanent closure may dispatch.
+- Capability declarations drive idempotency, status lookup, cancellation, usage, privacy, and asset behavior without provider-specific leakage into the core workflow.
 
 ## Cost-Cap and Usage-Accounting Tests
 
 - Below, exactly at, and above 80% and USD 1 cap using committed plus reserved amounts.
 - Original, retry, repair, cancelled in-flight, uncertain, provider-refused, missing-usage, and reconciled calls all account per approved rules.
 - Unauthorized/Admin/dual-role cap increases, audit evidence, concurrency at cap, and stale cap context.
+- Accept one idempotent approved same-tenant Exam Creation cap-change notification and reject missing, pending, rejected, cancelled, expired, stale, unauthorized, or cross-tenant request references.
 - Cap blocks only new AI calls; retrieval/handoff and Exam Creation editing/approval of existing valid results remain permitted.
 - Pricing version/time, provider units, token categories, currency conversion, estimates/finals/adjustments, and aggregation reconciliation.
+- Pre-dispatch reservation uses measured input plus configured maximum output; missing or uncertain usage retains the conservative estimate rather than zero.
+- Later cost adjustments are immutable/audited and preserve the original pricing-catalog version and any non-USD conversion source/time.
 
 ## Tenant-Isolation, Authorization, Privacy, and Log-Redaction Tests
 
 - Teacher, Tenant Admin, workflow service, AI worker, support with valid/expired/missing grant, unauthorized user, and cross-tenant calls for every command/result/asset/provider-response action.
 - Tenant IDs in all database/object queries; stable identifiers do not reveal cross-tenant existence.
 - TLS/configuration checks, encryption at rest, provider-secret isolation/rotation, least-privilege storage and provider access.
+- Reject every provider/model/configuration absent from the approved allowlist or missing required privacy documentation/settings.
+- Verify only required canonical blocks/referenced assets are transmitted and provider privacy/configuration versions persist per call.
 - Injection fixtures place sensitive markers in canonical text, prompts, questions, all option/answer/explanation fields, assets, raw responses, errors, provider messages, identifiers, and signed URLs; assert none appear in ordinary logs/metrics/traces/audits.
 
 ## Canonical Document Compatibility and Boundary Tests
@@ -137,7 +149,9 @@ DOCX parsing/canonicalization, Draft editing/lifecycle, Master approval, Questio
 ## Migration and Backward-Compatibility Tests
 
 - Additive compatible minor-version fixtures, rejected unsupported major versions, declared old/new dual readers, and provider-adapter/taxonomy compatibility.
+- Verify readers accept the current and immediately previous compatible minor version and writers emit only the current version.
 - Upgrade and rollback at every durable stage with in-flight old-version attempts.
+- Verify breaking-major deployment installs dual readers before new writes and passes the explicit consumer-readiness and rollback matrix.
 - Migration preserves exact question meaning, answers, identity, provenance, usage/cost, warnings, and hashes or records an explicit new representation/version.
 - Incompatible worker fails closed without provider call or result reinterpretation.
 
@@ -148,9 +162,21 @@ DOCX parsing/canonicalization, Draft editing/lifecycle, Master approval, Questio
 - Normalized adapter outputs match production adapter contract fixtures.
 - No local-only code branch changes request/result/workflow semantics.
 
+## UX Contract, Accessibility, and Responsive Tests
+
+- Present exactly **Preparing questions → Checking questions → Draft ready** for the mapped internal stages.
+- During bounded repair, show **Correcting generated questions**, then return to **Checking questions** without implying teacher editing or regeneration.
+- Keep uncertain-provider reconciliation under **Preparing questions** and expose no unsafe retry action.
+- Do not show **Draft ready** or open Review & Edit before atomic validated-result persistence and handoff; after success, automatically open Review & Edit and announce readiness.
+- On non-blocking-warning success, show the warning summary at Draft ready and preserve details in Review & Edit.
+- On failure, retain the tracker, mark the failed stage, focus the one recovery-card heading, and expose exactly one recommended action.
+- Programmatically announce material stage, repair, readiness, warning, cancellation, cost, and Admin-request states without excessive repetition or color-only meaning.
+- Stack all three stages vertically on narrow screens while preserving current/completed/failed semantics without horizontal scrolling.
+
 ## Performance, Reliability, and Cost-Reporting Tests
 
-- Run the approved `AI_PROCESSING_PROFILE_V1` sample across extraction/generation counts, source complexity, tables/formulas/assets, warm/cold conditions, and qualifying concurrency.
+- Run at least 100 valid `AI_PROCESSING_PROFILE_V1` attempts with up to four simultaneous workflows, both modes, generation counts 5/15/50, at least 20 generation attempts requesting 50 questions, at least 20 extraction attempts, at least 20 complex canonical inputs containing tables/formulas/media, and documented warm/cold conditions.
+- Fix and report the approved production provider/model/region plus pricing/privacy configuration for the qualification run.
 - Measure durable request acceptance through atomically available validated result: queue and per-stage P50/P95/P99/max, provider latency, retries, repairs, question count, token categories, provider units, and USD-equivalent cost.
 - Confirm five-minute P95 under the approved profile; separately report declared provider outages and stress tests.
 - Calculate 99.5% availability with internal, canonical-input, provider, cancellation, and client-caused outcomes separately classified.
@@ -199,7 +225,7 @@ All fixtures are synthetic, non-sensitive, deterministic, and stable.
 
 ## Completion Criteria
 
-- AC-001 through AC-028 each have at least one implemented, passing mapped test.
+- AC-001 through AC-029 each have at least one implemented, passing mapped test.
 - Mandatory schema, mode, fidelity, grounding, domain, adapter, workflow, idempotency, cost, security, privacy, canonical-boundary, atomicity, migration, local-parity, performance, reliability, and failure-injection suites pass.
 - Business-critical validation, idempotency, authorization, cost, cancellation, and handoff branches have no untested path and reach at least 90% unit coverage where practical.
 - The deterministic main suite makes no live production-provider call.

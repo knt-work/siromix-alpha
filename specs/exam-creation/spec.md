@@ -14,6 +14,10 @@ No neighboring feature specifications exist at the time this specification is cr
 
 The feature complies with SiroMix Constitution v1.1.0, especially canonical data as the system of record, engine separation, validated AI drafts, explicit human approval, versioned official data, observable/idempotent processing, private-data handling, testable correctness, and the one-DOCX MVP boundary.
 
+**Specification Status:** Implementation Ready. The constitution check, DOCX Ingestion and AI Processing reconciliation, Lyra review, and Admin cap-request ownership decision are complete.
+
+**Post-Reconciliation Constitution Check:** Passed against Constitution v1.1.0. Canonical-data ownership, AI/Draft/Master separation, explicit approval, stable identity/versioning, bounded/idempotent processing, tenant isolation, privacy-safe observability, cost control, local parity, migration safety, and test traceability remain intact.
+
 ## 3. Related Specifications
 
 - **DOCX Ingestion (future):** owns safe DOCX parsing, asset extraction, unsupported-element reporting, and production of a versioned Canonical Document. It does not create questions, Draft Exams, or Master Exams.
@@ -26,8 +30,8 @@ Until the related specifications are approved, their detailed contracts, limits,
 
 ## 4. User Roles
 
-- **Teacher:** creates an exam within an authorized tenant, reviews warnings and draft content, edits the Draft Exam, and explicitly approves it.
-- **Tenant Admin:** may view tenant workflows, processing status, and audit history; retry failed processing; cancel unapproved workflows; perform authorized deletion; and manage teacher access through the authorization system. An Admin may not edit Draft content, change correct answers, acknowledge teacher-review warnings, or approve a Master Exam unless the user also holds the Teacher role.
+- **Teacher:** creates an exam within an authorized tenant, reviews warnings and draft content, edits the Draft Exam, explicitly approves it, and may submit one active in-product request for a Tenant Admin to raise the workflow AI cost cap.
+- **Tenant Admin:** may view tenant workflows, processing status, audit history, and tenant-scoped pending AI cost-cap requests; approve or reject a current request; retry failed processing; cancel unapproved workflows; perform authorized deletion; and manage teacher access through the authorization system. An Admin may not edit Draft content, change correct answers, acknowledge teacher-review warnings, or approve a Master Exam unless the user also holds the Teacher role.
 - **Platform support:** may access operational metadata only by default. Access to document or exam content requires an explicit, time-limited, audited support grant.
 - **Unauthorized user:** may not upload, view, modify, process, or approve exam-creation data.
 
@@ -61,6 +65,11 @@ All role and tenant checks must be enforced server-side.
 - **BR-024:** Retention follows Section 8. Raw AI-provider responses are deleted after validated structured data and required diagnostic metadata are stored. Legal requirements, tenant deletion, or a documented legal hold may override normal schedules.
 - **BR-025:** The default AI cost cap is USD 1 equivalent per exam-creation workflow. The system warns at 80%, counts automatic repair attempts toward the cap, and blocks further AI attempts at the cap without blocking Draft editing or approval. An authorized Tenant Admin may raise the cap before another AI attempt.
 
+- **BR-026 — Admin cap-request lifecycle:** Exam Creation owns the in-product cap-increase request. A Teacher authorized for the workflow may create at most one active request per workflow when further AI calls are cap-blocked. The Teacher is not asked to choose a new cap. The request records current cap/usage/reservations, reason if supplied, requester, tenant/workflow, timestamps, and status `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, or `EXPIRED`.
+- **BR-027 — Cap-request decisions:** Only an authorized Tenant Admin in the same tenant may approve or reject a current `PENDING` request. On approval the Admin enters a new positive cap greater than the current cap; the system records it with decision actor/time and reason if supplied, atomically updates the workflow cap, and publishes one idempotent approved cap-change notification to AI Processing. Submission never implies approval and never grants the requester cap-change authority.
+- **BR-028 — Cap-request delivery and safety:** Active-request uniqueness and idempotency prevent duplicate submissions, decisions, notifications, and cap changes. Authorized Tenant Admin recipients are resolved server-side; in-product notification delivery uses a transactional outbox or equivalent durable mechanism. Notification failure does not lose the request or decision. A stale, expired, cancelled, already-decided, unauthorized, or cross-tenant decision is rejected without changing the cap.
+- **BR-029 — Cap-request expiry/withdrawal:** A Teacher may cancel their own current `PENDING` request. A request expires after seven days if undecided. A rejected, cancelled, expired, or superseded request remains auditable and a later cap-blocked AI action may create a new request. Cap-request records and decision/notification audit events follow the seven-year audit retention policy.
+
 ## 6. Functional Requirements
 
 - **FR-001 — Start workflow:** The system shall let an authorized teacher create an exam-creation workflow with a stable identifier and enforce BR-019 metadata at the processing and approval gates.
@@ -82,6 +91,10 @@ All role and tenant checks must be enforced server-side.
 - **FR-017 — Enforce retention:** The system shall apply the retention and deletion schedule in Section 8 with recoverable deletion where specified, legal-hold override, and auditable authorized deletion.
 - **FR-018 — Enforce cost control:** The system shall attribute available AI usage/cost to each attempt, warn at 80% of the workflow cap, block new AI attempts at the cap, and support an audited authorized Tenant Admin cap increase without limiting non-AI editing or approval.
 
+- **FR-019 — Request cap increase:** When AI is cap-blocked, let an authorized Teacher submit one tenant/workflow-scoped request, confirm submission, show its current status, prevent duplicate active requests, and preserve access to existing Draft editing/approval.
+- **FR-020 — Decide cap request:** Let an authorized Tenant Admin view tenant-scoped pending requests and approve or reject one current request. Approval atomically changes the cap and publishes one idempotent approved cap-change notification; rejection changes no cap.
+- **FR-021 — Recover cap requests:** Permit authorized withdrawal, expire pending requests after seven days, reject stale/concurrent/unauthorized decisions, and recover notification delivery through durable outbox retry without duplicating the cap update.
+
 ## 7. Non-Functional Requirements
 
 - **NFR-001 Security:** Validate file signature/type and configured size limits, isolate processing appropriately, use private object storage and short-lived authorized access, and prevent cross-tenant access.
@@ -101,13 +114,14 @@ All role and tenant checks must be enforced server-side.
 
 The logical model must include:
 
-- **ExamCreationWorkflow:** stable ID, tenant/owner, BR-019 metadata, selected mode, requested question count where applicable, durable stage/status, selected Draft reference, optional predecessor/replacement-workflow link, AI cost cap/current attributed cost, correlation ID, timestamps, and optimistic-concurrency value. Each workflow owns exactly one source.
+- **ExamCreationWorkflow:** stable ID, tenant/owner, BR-019 metadata, selected mode, requested question count where applicable, durable stage/status, selected Draft reference, optional predecessor/replacement-workflow link, AI cost cap/current attributed and reserved cost, correlation ID, timestamps, and optimistic-concurrency value. Each workflow owns exactly one source.
 - **SourceDocumentVersion:** stable ID/version, workflow ID, private object reference, original filename, validated media/type metadata, size, content hash, upload actor/time, and security-scan status where applicable. A source replacement after Draft creation belongs to a new linked workflow.
 - **CanonicalDocumentVersion:** stable ID/version, source version, versioned schema, parser/version, content hash, ordered canonical blocks, stable asset references, warnings, and creation status/time.
 - **AIProcessingAttempt:** stable ID/sequence, workflow and canonical version, mode and parameters, prompt-template version, Question JSON Schema version, provider/model, idempotency/correlation data, timestamps, status, failure classification, and usage/cost metadata where available.
 - **DraftExamRevision:** stable Draft ID and monotonically increasing revision, workflow, source/canonical/attempt provenance, editable exam metadata, ordered structured questions, validation results, warning-instance acknowledgements, editor, and timestamps. Regeneration and replacement-source processing create distinct Draft IDs; autosave creates revisions under the selected Draft ID.
 - **MasterExamVersion:** stable exam ID and immutable positive version number, source Draft revision, approved structured content, stable question IDs, approval actor/time, provenance, and contract version.
 - **AuditEvent:** stable ID, tenant, workflow/exam references, event type, actor or system identity, timestamp, correlation ID, and minimal non-sensitive change metadata.
+- **AICostCapIncreaseRequest:** stable ID, tenant/workflow, requester, current-cap and committed/reserved-cost snapshot, optional requester reason, status, approved new cap where applicable, decision actor/reason/time, expiry/cancellation time, idempotency key, optimistic-concurrency value, timestamps, and notification/outbox reference.
 
 Canonical blocks and question/media references must use stable identifiers. Binary assets must be stored separately. Core exam queries must not require opening DOCX or rendered files.
 
@@ -130,6 +144,7 @@ Retention requirements:
 - Failed-attempt metadata, status, and cost records are retained for 1 year.
 - Master Exam versions are retained until authorized exam deletion and its 30-day recovery period complete.
 - Approval, regeneration, replacement, security, authorization, deletion, and cost-cap-change audit events are retained for 7 years.
+- Cap-increase requests plus submission, decision, withdrawal, expiry, notification, and cap-change audit events are retained for 7 years.
 - Raw AI-provider responses are not retained after validated structured output and required diagnostic metadata are stored.
 - Tenant deletion or applicable legal requirements may require earlier deletion; a documented legal hold may suspend deletion.
 
@@ -162,6 +177,8 @@ The interface must prevent users from treating the guided steps as freely skippa
 - Return later to a persisted in-progress workflow or saved Draft.
 - Leave the Processing step while work continues and monitor or reopen the workflow from the exam dashboard.
 - Regenerate into a separate candidate while preserving the current Draft and edits.
+- When AI is cap-blocked, submit one Admin cap-increase request, see confirmation/current status, continue using an existing Draft, and retry AI only after an approved cap permits it.
+- Tenant Admin reviews tenant-scoped pending requests and approves or rejects them; a Teacher may withdraw their own pending request.
 - Compare the current Draft and a regenerated candidate through a side-by-side change summary, then explicitly choose which candidate to open.
 - Start a new revision from an approved Master Exam to create a later official version.
 
@@ -177,6 +194,8 @@ The interface must prevent users from treating the guided steps as freely skippa
 - Every non-blocking warning must be acknowledged individually before approval; acknowledgement of one warning must not dismiss or imply acknowledgement of another.
 - Editing must not silently call AI.
 - Actions unavailable due to state or permission must explain why.
+- A cap-request submission must say that the request was sent, not approved. While it is pending, replace duplicate submission with the current request status and withdrawal option.
+- Tenant Admin approval must show the current cap, require entry of a higher new cap and an explicit decision, and explain that rejection changes no cap.
 - After automatic recovery is exhausted, present one primary recommended recovery action based on the failed stage rather than asking the teacher to choose among technical recovery mechanisms.
 - Processing continues after the teacher leaves the workflow. Leaving must not be presented as cancellation.
 - The exam dashboard shows the workflow's current named processing stage and completion or failure status and provides a route back to it.
@@ -199,6 +218,7 @@ The interface must prevent users from treating the guided steps as freely skippa
 - Autosave failure keeps the affected changes visible, identifies that they are not yet persisted, and offers retry without discarding the last successfully saved revision.
 - Successful approval confirms the Master Exam version.
 - Approval cannot be initiated while autosave is pending or failed, the reviewed revision is stale, blocking errors remain, or any warning remains unacknowledged; the readiness checklist links to each unresolved item.
+- A cap-blocked state keeps existing Draft access available, shows **Request an Admin cap increase**, and after submission shows `Pending`, `Approved`, `Rejected`, `Cancelled`, or `Expired` without implying a new AI attempt has started.
 - Errors identify the failed stage, whether saved work remains safe, and eligible retry/replacement actions.
 - Terminal processing failures emphasize one recommended recovery action. Secondary details may explain the failure and support escalation, but must not compete with the primary recovery path.
 - The Approval step summarizes all blocking errors, unacknowledged warnings, and acknowledged warnings, with navigation back to each affected item.
@@ -217,6 +237,7 @@ The interface must prevent users from treating the guided steps as freely skippa
 - Choosing the regenerated candidate does not delete or overwrite the preserved current Draft.
 - A replacement-source candidate must be clearly distinguished from the existing Draft by source filename, linked workflow, and processing status before the teacher chooses to open it.
 - Never imply that retry or regeneration is guaranteed to preserve unsaved edits.
+- Duplicate cap-request submission returns the active request. Approval/rejection conflicts, notification delay, expiry, or withdrawal preserve the cap and existing Draft and provide the next eligible action.
 
 ### 9.7 Accessibility and Responsive Behavior
 
@@ -249,6 +270,8 @@ The interface must prevent users from treating the guided steps as freely skippa
 - Draft editing does not invoke AI.
 - Approval is explicit and version-specific.
 - Regeneration does not silently replace the current saved Draft.
+- Cap-blocked Teachers can send one in-product Admin request; only Tenant Admin approval changes the cap, and request submission never starts AI.
+- Pending cap requests can be withdrawn by their requester and expire after seven days.
 - Mixing and publishing are presented only as post-approval handoffs.
 
 ### 9.9 UX Open Questions
@@ -306,6 +329,7 @@ Ownership boundaries:
 - **AC-022:** Source, canonical, Draft, candidate, temporary, failed-attempt, Master Exam, audit, and raw-provider data follow the exact Section 8 retention schedule, including recoverable deletion, authorized deletion, tenant/legal deletion, and legal-hold behavior.
 - **AC-023:** Tenant Admin and platform-support access follows Section 4: administrative operations are tenant-scoped and audited, content review/edit/warning acknowledgement/approval remains Teacher-only unless the user separately holds that role, and support content access requires a time-limited audited grant.
 - **AC-024:** Under normal supported load, the NFR-006 and NFR-012 latency/availability targets are measurable; AI cost is attributed per attempt, warns at 80% of the USD 1 equivalent cap, blocks further AI attempts at the cap, preserves editing/approval, and permits only an audited authorized Admin cap increase.
+- **AC-025:** When further AI calls are cap-blocked, an authorized Teacher can create at most one active tenant/workflow-scoped Admin cap-increase request and receives confirmation/current status while Draft editing/approval remain available; an authorized same-tenant Admin can approve or reject it, approval atomically changes the cap and publishes exactly one idempotent notification to AI Processing, rejection changes no cap, requester withdrawal and seven-day expiry work, and duplicate/stale/concurrent/unauthorized/cross-tenant actions cannot duplicate or change the cap.
 
 ## 12. Error Cases
 
@@ -329,6 +353,7 @@ Ownership boundaries:
 - Retention job deletes data early, fails to delete expired data, bypasses a legal hold, or makes recoverable data unrecoverable before 30 days.
 - Tenant Admin attempts Teacher-only editing, warning acknowledgement, or approval; platform support attempts content access without a current audited grant.
 - AI cost reaches the warning or cap threshold, cost data is unavailable, or an unauthorized cap increase is attempted.
+- Cap request is duplicated, misrouted, stale, expired, cancelled, already decided, cross-tenant, unauthorized, or concurrently decided; approval notification is delayed/duplicated; requested cap is invalid; or submission is incorrectly presented as approval.
 
 Each error must preserve already committed valid data, classify retryability, and avoid silent duplication or data loss.
 
@@ -344,4 +369,4 @@ Each error must preserve already committed valid data, classify retryability, an
 
 ## 14. Open Questions
 
-No unresolved product question remains for the Exam Creation MVP. Later ingestion and AI-processing specifications must define contract internals without weakening the approved limits, gates, retry policy, retention, authorization, performance, or cost controls in this specification.
+No unresolved product, UX, or architecture question remains for the Exam Creation MVP. DOCX Ingestion and AI Processing contracts are reconciled, including the Exam Creation-owned Admin cap-request lifecycle and AI Processing-owned cap enforcement.

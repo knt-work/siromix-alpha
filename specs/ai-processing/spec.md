@@ -12,6 +12,10 @@ AI Processing is downstream of DOCX Ingestion and upstream of Exam Creation's Dr
 
 It consumes only Canonical Document versions with terminal status `SUCCEEDED` or `SUCCEEDED_WITH_WARNINGS`. It never reopens the original DOCX, reads DOCX XML or OMML, consumes temporary parser output/private source fragments, or changes canonical content. Formulas are consumed through normalized Presentation MathML. Binary assets are accessed only through authorized stable references.
 
+**Specification Status:** Implementation Ready. The constitution check, neighboring-spec reconciliation, Lyra review, owner decisions OQ-001 through OQ-004, and Vega decisions VEGA-001 through VEGA-006 are complete.
+
+**Post-Reconciliation Constitution Check:** Passed against Constitution v1.1.0. AI Processing consumes only canonical data, publishes only validated structured candidates, preserves Draft/Master ownership in Exam Creation, uses bounded/idempotent provider recovery, enforces tenant/privacy/cost controls, supports local parity and migration-safe contracts, and maps every acceptance criterion to required tests.
+
 ## 3. Related Specifications
 
 - **Exam Creation:** `/specs/exam-creation/spec.md`, `tasks.md`, and `test-spec.md` define the two modes, Draft/Master lifecycle, retry/repair limits, regeneration behavior, authorization, retention, cost cap, and AI-to-Draft handoff requirements carried forward here.
@@ -67,6 +71,16 @@ Authorization and tenant isolation are enforced server-side at command, persiste
 - **BR-027 — Provider interface:** All environments use the same provider-neutral AI Provider Interface. Local/automated tests use a deterministic fake/local provider with contract-compatible success, refusal, truncation, malformed output, timeout, rate limit, uncertain outcome, usage, latency, and cost behavior. Production-provider integration tests are separately controlled and excluded from the deterministic main suite.
 - **BR-028 — Backward compatibility:** Persisted request/result/error schemas use semantic versions and declared compatibility windows. Additive compatible changes do not reinterpret old results; breaking changes require a new major version, migration/dual-read plan, consumer readiness, rollback plan, and immutable preservation of prior meaning.
 
+- **BR-029 — Extraction ambiguity threshold:** Extraction blocks when question text, exactly four options, exactly one correct-answer relationship, assessable meaning, required structured content, or required provenance cannot be determined reliably from the Canonical Document. It may produce a warning only when the complete supported question contract remains valid and the ambiguity cannot affect meaning, option interpretation, answer correctness, or required references.
+- **BR-030 — Explanation policy:** Explanations are omitted by default. Extraction preserves a source explanation when present and valid; generation does not request or invent an explanation in the MVP. Teachers may add or edit an explanation later in the Draft Exam without invoking AI.
+- **BR-031 — Provider capability and uncertain-outcome policy:** Each provider adapter publishes versioned capabilities for idempotency tokens, status lookup, cancellation, usage reporting, privacy controls, and asset input. Every provider call receives one stable dispatch ID. When outcome is uncertain, adapters with idempotency/status support reconcile the same call; adapters without safe reconciliation reserve the maximum estimated call cost and prohibit automatic redispatch. A replacement call requires an explicit authorized new processing attempt after the uncertain call is resolved or permanently closed through an audited operator decision.
+- **BR-032 — Cost normalization:** A versioned pricing catalog records provider/model, billable units, USD rates, effective interval, source, and currency-conversion source/time when non-USD pricing applies. Before dispatch, reserve the conservative maximum estimated cost from measured input plus configured maximum output. Finalize from provider usage when available. Missing or uncertain usage retains the reservation as estimated cost and is never treated as zero; later adjustments are immutable and audited.
+- **BR-033 — Provider privacy baseline:** Production may use only allowlisted provider/model/configuration combinations whose data sent, region, retention, training, abuse-monitoring, asset handling, deletion behavior, and subprocessors are documented and approved. No-training and zero-retention or the shortest available approved retention are required where supported. Send only the minimum required canonical blocks and referenced assets; provider configuration and privacy-policy versions are recorded per call.
+- **BR-034 — Compatibility window:** During MVP, writers emit one current major/minor contract version. Readers accept the current compatible version and the immediately previous compatible minor version. A breaking major version requires new readers and dual-read deployment before new writes, explicit consumer readiness, migration/backfill where needed, and a tested rollback matrix. Old immutable results retain their original schema and meaning.
+- **BR-035 — Deterministic grounding and fidelity:** Every question and correct answer must cite valid source blocks; every claim required to interpret the question, options, answer, or preserved explanation must be supported by those blocks or referenced canonical structures. Validators deterministically check reference closure, evidence presence, extraction order, answer relationships, hashes/identities, and table/formula/media linkage. Embeddings, external knowledge, semantic retrieval, and probabilistic validator calls are not used.
+- **BR-036 — AI_PROCESSING_PROFILE_V1:** Qualification runs at least 100 valid attempts with up to four simultaneous workflows and both modes. It includes requested generation counts 5, 15, and 50; at least 20 generation attempts requesting 50 questions; at least 20 extraction attempts; at least 20 complex canonical inputs containing tables, formulas, or media; and documented warm/cold conditions. The approved production provider/model/region and pricing/privacy configuration are fixed in the report. Measure durable request acceptance through atomic validated-result availability; report excluded provider outages separately and do not use them to hide internal latency.
+- **BR-037 — Admin cap-request boundary:** Exam Creation owns the user-facing Admin cap-increase request and its lifecycle. AI Processing does not notify users or approve requests; it enforces the currently authorized cap and accepts an idempotent, audited cap-change notification only after Exam Creation records an authorized Tenant Admin approval.
+
 ## 6. Functional Requirements
 
 - **FR-001 — Validate request:** Authorize and validate the versioned tenant/workflow-scoped request, mode parameters, identities, idempotency/correlation data, supported schema versions, and cost-cap context before provider work.
@@ -84,6 +98,9 @@ Authorization and tenant isolation are enforced server-side at command, persiste
 - **FR-013 — Observe and audit:** Emit privacy-safe structured logs, metrics, traces, attempt/stage events, cost events, authorization/cap changes, cancellation, regeneration, repair, raw-response deletion, and handoff events with correlation.
 - **FR-014 — Migrate and roll back:** Validate deployed request/result/error/provider-adapter compatibility, support declared readers during rollout, reject unsupported versions explicitly, and preserve rollback access to prior immutable results.
 
+- **FR-015 — Enforce approved architecture decisions:** Apply BR-029 through BR-036 to ambiguity classification, explanation handling, provider dispatch/reconciliation, cost reservation/finalization, provider privacy, compatibility, grounding/fidelity, and performance qualification.
+- **FR-016 — Consume cap changes:** Accept only an idempotent tenant/workflow-scoped cap-change notification backed by an authorized Exam Creation approval record; re-evaluate future AI-call eligibility without changing any prior usage, result, Draft, or audit record.
+
 ## 7. Non-Functional Requirements
 
 - **NFR-001 — Reliability:** Durable status and stage history survive worker restart; no eligible transient provider call exceeds three total attempts and no structural response exceeds two repairs.
@@ -97,6 +114,8 @@ Authorization and tenant isolation are enforced server-side at command, persiste
 - **NFR-009 — Maintainability:** Adding a provider adapter must not change Canonical Document, Question JSON, Draft/Master, mixing, or publishing contracts.
 - **NFR-010 — Compatibility/rollback:** Rollback never reinterprets or mutates prior requests/results; incompatible workers fail closed with a stable compatibility error.
 - **NFR-011 — Testability:** Deterministic suites cover every durable stage, error category, retry/repair/cancellation/idempotency branch, and validation invariant without live-provider dependence.
+
+- **NFR-012 — Provider portability:** Provider capability declarations and normalized call/response/usage/error contracts must permit replacement without changing Question JSON, canonical input, Draft, or cost-cap semantics. A provider lacking a required privacy control cannot be enabled in production.
 
 ## 8. Data Requirements
 
@@ -179,6 +198,15 @@ Code families:
 | `AIP-PERM-*` | Non-recoverable internal/configuration/migration/persistence failure | Terminal failure; operator action |
 
 Exact codes and message keys are additive and versioned; changing category, retryability, or meaning is a breaking taxonomy change.
+
+### 8.6 Approved Architecture Decision Records
+
+- **AD-AIP-001 — Uncertain outcomes:** Stable dispatch identity, capability-aware reconciliation, no automatic redispatch without certainty, conservative reservation, and explicit audited closure.
+- **AD-AIP-002 — Cost normalization:** Versioned pricing catalog, pre-dispatch conservative reservation, provider-usage finalization, non-zero missing-usage treatment, and immutable adjustments.
+- **AD-AIP-003 — Provider privacy:** Approved provider/model/configuration allowlist, minimum data transfer, no-training and minimum-retention posture, and versioned privacy provenance.
+- **AD-AIP-004 — Compatibility:** Current plus immediately previous compatible minor reads; dual-read-before-write for breaking majors; immutable old results and tested rollback.
+- **AD-AIP-005 — Grounding/fidelity:** Deterministic canonical evidence and reference validation only; no embeddings, broader RAG, external knowledge, or validator AI calls.
+- **AD-AIP-006 — Admin cap request:** Exam Creation owns requests, recipient delivery, and authorization; AI Processing consumes only approved cap changes.
 
 ## 9. User Experience Requirements
 
@@ -269,11 +297,7 @@ No standalone AI Processing UI is introduced. Exam Creation continues to own all
 
 ### 9.9 UX Open Questions
 
-No unresolved high-impact UX question remains.
-
-> **Orion escalation:** UXD-012 introduces an in-product Tenant Admin cap-increase request. Orion must reconcile product ownership, request lifecycle, permissions, acceptance criteria, `tasks.md`, and `test-spec.md` without weakening the existing rule that only an authorized Tenant Admin may raise the cap.
-
-> **Vega escalation:** UXD-012 requires a read-only architecture assessment for authorized recipient resolution, delivery, idempotency, audit, request status, concurrency, and notification behavior.
+No unresolved high-impact UX question remains. UXD-012 is reconciled through BR-037, AD-AIP-006, and the Exam Creation-owned cap-request lifecycle.
 
 ## 10. Workflow / User Flow
 
@@ -324,30 +348,30 @@ Boundary distinctions:
 - **AC-001:** Only an authorized, tenant-matched, versioned request with one eligible `SUCCEEDED` or `SUCCEEDED_WITH_WARNINGS` Canonical Document can start; blockers, missing assets, mismatches, or incompatible schemas invoke no provider.
 - **AC-002:** AI Processing never reads DOCX/ZIP/XML/OMML/private parser fragments, modifies canonical data, or accesses binary assets except through authorized stable references; normalized Presentation MathML is the formula input.
 - **AC-003:** Request, prompt, context, attempt, provider/model, schema, canonical, workflow/tenant, correlation/idempotency, mode, parameter, and cost-cap identities are validated and durably traceable.
-- **AC-004:** Extraction preserves source meaning/order/answer relationships/structured references/provenance, adds no intentional questions, and explicitly reports incomplete or ambiguous source questions.
+- **AC-004:** Extraction preserves source meaning/order/answer relationships/structured references/provenance, adds no intentional questions, preserves a valid source explanation when present, blocks every BR-029 answer-integrity/meaning ambiguity, and warns only when the complete question remains valid and unaffected.
 - **AC-005:** Generation defaults to 15, accepts only integers 5–50, is grounded only in the supplied canonical version, and validates exactly the requested count with no unsupported claims.
-- **AC-006:** Every validated question is the sole supported type and has exactly ordered non-empty A–D options, one correct label, consistent text/answer/explanation, and only valid structured content/asset references.
-- **AC-007:** Required-field, empty, malformed, unsupported, duplicate question/option, answer inconsistency, explanation inconsistency, broken-reference, provenance, grounding, fidelity, identity, ordinal, and ordering failures are detected and classified.
+- **AC-006:** Every validated question is the sole supported type and has exactly ordered non-empty A–D options, one correct label, consistent text/answer/explanation, and only valid structured content/asset references; generation omits explanations by default and never asks the provider to invent them.
+- **AC-007:** Required-field, empty, malformed, unsupported, duplicate question/option, answer inconsistency, explanation inconsistency, broken-reference, provenance, grounding, fidelity, identity, ordinal, and ordering failures are detected through deterministic canonical evidence/reference checks without embeddings, external knowledge, broader RAG, or validator AI calls.
 - **AC-008:** Provider refusal/truncation, malformed JSON, schema mismatch, incomplete response, unknown fields prohibited by schema, and unsupported question types cannot produce a handoff.
 - **AC-009:** A structurally eligible invalid original response receives at most two repair attempts, each revalidated from parsing onward with complete lineage/usage/cost; ineligible structural failures do not repair.
 - **AC-010:** Domain-invalid output after repair stops automatic processing, states that no Draft was created, and emphasizes **Regenerate questions**; regeneration creates a distinct attempt/result/candidate identity and overwrites nothing.
 - **AC-011:** Transient provider/infrastructure failures use bounded backoff and no more than three total provider attempts; permanent failures do not retry automatically.
 - **AC-012:** Duplicate delivery across every stage converges on one logical attempt/call/response/result/question/usage/audit/handoff and avoids preventable duplicate billing.
-- **AC-013:** Uncertain provider outcomes block a new billable call until safely reconciled or explicitly released under the approved conservative reservation/audit policy; the teacher-facing tracker remains at **Preparing questions** and exposes no unsafe retry action.
-- **AC-014:** The default USD 1 equivalent workflow cap warns at 80% through a non-blocking notice near the AI action showing remaining allowance, includes retries/repairs/uncertain reservations, blocks further AI calls at the cap, offers one idempotent in-product **Request an Admin cap increase** action with submission confirmation, permits only audited authorized Admin increases, and never blocks existing valid Draft editing/approval.
-- **AC-015:** Usage reporting captures available token/provider units, latency, pricing identity, reservation/estimate/final status, and USD-equivalent cost at call/attempt/result/workflow scope without silently treating missing usage as zero.
+- **AC-013:** Every provider call has one stable dispatch ID and capability record; uncertain outcomes reconcile the same call where supported, otherwise retain the maximum estimated reservation and prohibit automatic redispatch until audited resolution/permanent closure and an explicit authorized new attempt; the tracker remains at **Preparing questions** and exposes no unsafe retry action.
+- **AC-014:** The default USD 1 equivalent workflow cap warns at 80% through a non-blocking notice near the AI action showing remaining allowance, includes retries/repairs/uncertain reservations, and blocks further AI calls at the cap; Exam Creation owns the idempotent **Request an Admin cap increase** lifecycle, AI Processing accepts only an approved authorized cap-change notification, and the cap never blocks existing valid Draft editing/approval.
+- **AC-015:** Usage reporting uses the effective versioned pricing catalog, reserves conservative maximum estimated cost before dispatch, captures available token/provider units, latency, currency conversion, estimate/final/adjustment state, and USD-equivalent cost at call/attempt/result/workflow scope, and retains the estimate rather than silently treating missing usage as zero.
 - **AC-016:** Every durable stage, retry, repair, cancellation, uncertain outcome, persistence, and handoff transition survives restart and follows Temporal-compatible at-least-once-safe contracts.
 - **AC-017:** Cancellation requires confirmation that provider cost may already have been incurred and no Draft may be produced; after confirmation it is durable/idempotent, remains distinct from deletion, prevents future eligible work and handoff when it wins the terminal race, preserves committed provenance/usage, and recovers safely from worker interruption.
 - **AC-018:** Validated-result persistence and handoff are atomic/idempotent: Exam Creation receives one complete immutable validated result or none, never a partial/failed/cancelled result.
 - **AC-019:** Question JSON contains every Section 8.2 field, stable result-scoped candidate question identities and contiguous ordering; Exam Creation can map them to independently owned persistent Draft/Master identities.
 - **AC-020:** The versioned taxonomy represents every required category with stable machine-readable semantics, and every failure/warning exposes stage, severity, retry/repair/terminal flags, safe message, affected references, and recommended action sufficient to retain the three-stage tracker, mark the failed stage, and show one recovery card beneath it.
 - **AC-021:** Canonical warnings/provenance are preserved without reclassification, unsupported canonical content blocks or warns according to whether faithful extraction/grounded generation remains valid, and a successful result with non-blocking warnings shows a summary at Draft ready while preserving details in Review & Edit.
-- **AC-022:** Tenant isolation, roles/service identities/support grants, authorization, TLS, at-rest encryption, secret isolation, and audited privileged actions protect requests, canonical access, provider calls, responses, results, and handoffs.
+- **AC-022:** Tenant isolation, roles/service identities/support grants, authorization, TLS, at-rest encryption, secret isolation, audited privileged actions, provider allowlisting, minimum-data transfer, and approved no-training/minimum-retention settings protect requests, canonical access, provider calls, responses, results, and handoffs.
 - **AC-023:** Ordinary logs/metrics/traces/audits contain no complete prompts, source content, questions, options, answers, explanations, raw responses, asset bytes, secrets, signed URLs, or cross-tenant identifiers/content leakage.
 - **AC-024:** Raw provider responses are access-restricted and deleted after validated data/diagnostics persist, with failed-payload maximum, tenant/legal deletion, stricter obligation, and legal-hold behavior enforced.
 - **AC-025:** The same AI Provider Interface supports deterministic local success and contract-compatible failure/usage/cost simulation; controlled production integration tests do not make the main suite nondeterministic.
-- **AC-026:** Request/result/taxonomy/provider contracts support declared backward-compatible reads, explicit rejection of unsupported versions, safe migrations, dual-read/rollout where required, and rollback without reinterpretation.
-- **AC-027:** Under `AI_PROCESSING_PROFILE_V1`, the five-minute P95 and 99.5% availability are measured with required per-stage/provider/retry/repair/question/token/cost distributions and provider/upstream exclusions reported separately.
+- **AC-026:** Writers emit the current contract version; readers accept it and the immediately previous compatible minor version; unsupported versions fail explicitly, breaking majors deploy dual readers before new writes, and migration/rollback preserves immutable prior meaning.
+- **AC-027:** At least 100 `AI_PROCESSING_PROFILE_V1` attempts with up to four simultaneous workflows, both modes, required 5/15/50 and complex-input distributions, and fixed provider/model/region/pricing/privacy configuration measure the five-minute P95 and 99.5% availability with required per-stage/provider/retry/repair/question/token/cost distributions and provider/upstream exclusions reported separately.
 - **AC-028:** Fault injection at every durable stage and persistence/publication boundary proves safe retry, recovery, cancellation, idempotency, cost accounting, no partial handoff, and no sensitive leakage.
 - **AC-029:** Exam Creation presents **Preparing questions → Checking questions → Draft ready**, temporarily shows **Correcting generated questions** during repair, automatically opens Review & Edit only after atomic validated-result availability, announces relevant states accessibly, and on narrow screens stacks the tracker vertically while preserving completed/current/failed semantics without horizontal scrolling.
 
@@ -384,22 +408,12 @@ Every error maps to the versioned taxonomy, preserves committed valid work and u
 
 ## 14. Open Questions
 
-### Remaining Product or Architecture Questions
+No unresolved product, UX, or architecture question remains for the AI Processing MVP.
 
-- **OQ-001 — Extraction ambiguity policy:** Owner approval is required for the precise threshold that distinguishes a valid candidate question with a warning from a blocking incomplete/ambiguous extraction result.
-- **OQ-002 — Explanation policy:** Owner approval is required on whether explanations are requested by default, omitted by default, or controlled by an Exam Creation setting; the schema remains optional.
-- **OQ-003 — AI_PROCESSING_PROFILE_V1 workload:** Owner and operations approval are required for concurrency, source complexity mix, provider/model, region, warm/cold conditions, and sample size used to qualify the five-minute P95.
+Resolved decisions:
 
-- **OQ-004 — Admin cap-increase request ownership:** UXD-012 confirms the user-facing in-product request and confirmation behavior. Orion must assign the owning feature, request lifecycle, eligible requester/recipient policy, expiry/withdrawal behavior, and cross-spec acceptance criteria before implementation.
-
-### Vega Escalations
-
-- **VEGA-001 — Uncertain provider outcome policy:** Define provider-specific reconciliation windows, safe redispatch rules, and conservative cost reservation when a provider lacks idempotency/status lookup.
-- **VEGA-002 — Cost normalization:** Define authoritative pricing source/versioning, currency conversion time/source, reservation algorithm, and behavior when providers omit usage.
-- **VEGA-003 — Provider privacy baseline:** Select production provider/model configurations, data residency/retention/training settings, asset-transfer policy, and approved diagnostic retention.
-- **VEGA-004 — Compatibility window:** Define supported request/result schema versions, dual-read duration, migration rollout order, and rollback compatibility matrix.
-- **VEGA-005 — Grounding/fidelity validator design:** Recommend deterministic validation techniques and evidence thresholds that satisfy the contract without introducing question-bank retrieval, embeddings, or broader RAG.
-
-- **VEGA-006 — Admin cap-request delivery:** Assess recipient resolution, notification delivery, idempotency, authorization, audit, request state, concurrency, and failure recovery for UXD-012 without granting cap-change authority to the requester.
-
-No implementation may begin until OQ-001 through OQ-004 and VEGA-001 through VEGA-006 are resolved or explicitly deferred with an approved, testable contract.
+- OQ-001 is resolved by BR-029.
+- OQ-002 is resolved by BR-030.
+- OQ-003 is resolved by BR-036.
+- OQ-004 is resolved by BR-037 and the Exam Creation cap-request lifecycle.
+- VEGA-001 through VEGA-006 are resolved by BR-031 through BR-037 and AD-AIP-001 through AD-AIP-006.

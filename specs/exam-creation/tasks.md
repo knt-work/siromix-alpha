@@ -15,6 +15,7 @@
 | EC-009 | Implement automated test coverage | Engineering | P0 | Pending |
 | EC-010 | Document local operation and rollback | Engineering / DevOps | P1 | Pending |
 | EC-013 | Implement retention, Admin/support controls, SLO telemetry, and AI cost cap | Backend / DevOps | P0 | Pending |
+| EC-014 | Implement Admin AI cost-cap request lifecycle | Backend / Frontend | P0 | Pending |
 
 ## Implementation Tasks
 
@@ -31,6 +32,7 @@
 - **EC-011:** Expose post-approval handoff contracts that require an exact Master Exam version and prohibit Draft consumption.
 - **EC-012:** Implement background-processing departure/return, exam-dashboard status, teacher-friendly stages with expandable technical provenance, and terminal-failure guidance with one recommended recovery action.
 - **EC-013:** Implement retention/deletion/legal-hold processing, Tenant Admin and time-limited support-grant controls, service-level telemetry, per-attempt cost attribution, 80% warning, AI-attempt cap enforcement, and audited Admin cap increase.
+- **EC-014:** Implement one-active-request cap-increase submission, Teacher withdrawal, seven-day expiry, Tenant Admin approval/rejection, atomic cap update, durable notification, idempotency, audit, and status presentation without granting cap-change authority to the requester.
 
 ## Database Tasks
 
@@ -38,6 +40,7 @@
 - **DB-002:** Add uniqueness and transaction constraints preventing duplicate logical attempts, Drafts, question identities within their scope, version numbers, and approvals.
 - **DB-003:** Define migrations, backward compatibility, rollback behavior, and the exact Section 8 retention/deletion/legal-hold lifecycle without changing official exam meaning.
 - **DB-004:** Ensure binary assets and original DOCX files remain outside core relational payloads and use stable private object references.
+- **DB-005:** Persist AICostCapIncreaseRequest status/history, active-request uniqueness, optimistic concurrency, seven-day expiry, decision data, outbox delivery, and seven-year retention/audit links.
 
 ## API Tasks
 
@@ -46,6 +49,7 @@
 - **API-003:** Return stable machine-readable error codes, retryability, actionable messages, current revision/status, and correlation IDs without leaking sensitive content.
 - **API-004:** Publish contract tests for ingestion, AI, Draft/Master, and later mixing/publishing handoffs.
 - **API-005:** Expose authorized retention/deletion, legal-hold, support-grant, cost status, and Admin cap-increase operations with auditable outcomes.
+- **API-006:** Expose idempotent submit/status/withdraw and Tenant Admin approve/reject contracts for cap requests; enforce tenant, role, current-state, higher-new-cap, concurrency, and one-active-request rules.
 
 ## Frontend Tasks
 
@@ -56,6 +60,7 @@
 - **FE-005:** Build side-by-side regeneration comparison, explicit preserved-candidate selection, and confirmed source replacement into a clearly linked workflow/candidate.
 - **FE-006:** Build the dedicated approval readiness checklist, unresolved-item navigation, target-version information, final immutable-version confirmation, success state, and later-feature handoffs without implementing mixing or publishing.
 - **FE-007:** Verify keyboard and focus behavior, semantic status/error/change announcements, non-color-only meaning, navigator drawer, responsive candidate comparison, and full complex-content editing on narrow screens.
+- **FE-008:** Present the cap-blocked state, one **Request an Admin cap increase** action, sent/current status, withdrawal, Admin decision view, explicit approval, and accessible pending/approved/rejected/cancelled/expired outcomes while preserving Draft access.
 
 ## Worker / Workflow Tasks
 
@@ -63,15 +68,17 @@
 - **WW-002:** Apply the exact BR-023 retry/repair counts, backoff, and idempotency at each boundary; distinguish transient, permanent, structural-repair, domain-validation, and authorization failures.
 - **WW-003:** Propagate correlation/provenance identifiers and privacy-safe structured telemetry.
 - **WW-004:** Provide local contract-compatible storage and AI adapters with meaningful failure simulation.
+- **WW-005:** Expire pending cap requests after seven days, deliver Admin notifications and approved cap changes through an outbox, and converge duplicate/restarted delivery without duplicate cap changes.
 
 ## Testing Tasks
 
-- **TEST-001:** Implement all cases in `test-spec.md` and maintain traceability to AC-001 through AC-024.
+- **TEST-001:** Implement all cases in `test-spec.md` and maintain traceability to AC-001 through AC-025.
 - **TEST-002:** Add unit tests for lifecycle transitions, validation severity, warning acknowledgement invalidation, stable Draft/revision/Master identities, concurrency, authorization, and idempotency.
 - **TEST-003:** Add contract and golden-fixture tests for Canonical Document and Question JSON boundaries.
 - **TEST-004:** Add integration tests for database transactions, private storage, orchestration, adapters, retry behavior, provenance, and audit records.
 - **TEST-005:** Add end-to-end tests for extraction, aggregate-count generation, four-step navigation, autosave/edit-without-AI, dashboard return, regeneration comparison, linked source replacement, failure recovery, readiness/approval, later version approval, and access denial.
 - **TEST-006:** Add responsive accessibility checks for navigator, warning acknowledgement, comparison, autosave, processing status, and approval, plus regression fixtures for correctness defects.
+- **TEST-007:** Add cap-request unit, integration, workflow, authorization, concurrency, outbox, retention, UX, accessibility, and end-to-end tests for AC-025.
 
 ## Dependencies
 
@@ -87,13 +94,15 @@ Mixing and Publishing are downstream consumers and are not implementation depend
 
 ## Completion Checklist
 
-- [ ] Constitution check completed before implementation planning.
+- [x] Constitution check completed before implementation planning.
 - [x] High-impact open questions resolved.
 - [x] Lyra UX review completed and Orion reconciliation applied.
-- [ ] All contracts are versioned and ownership boundaries documented.
+- [x] All contracts are versioned and ownership boundaries documented for implementation.
 - [ ] Security, privacy, idempotency, observability, cost, migration, local parity, and rollback tasks completed.
-- [ ] AC-001 through AC-024 each have passing mapped tests.
+- [x] AC-001 through AC-025 each map to at least one required test.
+- [ ] AC-001 through AC-025 each have passing tests.
 - [ ] Mandatory unit, contract, integration, workflow, end-to-end, error, and accessibility tests pass.
 - [ ] No Draft can enter mixing/publishing or become official without approval.
-- [ ] No unresolved constitutional or neighboring-spec conflict remains.
+- [x] No unresolved constitutional or neighboring-spec conflict remains.
+- [x] Specification status is `Implementation Ready`.
 - [ ] Pulsar review status is `Approved`.
