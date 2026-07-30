@@ -166,7 +166,23 @@ function readiness() {
     dependencies: ["postgresql-pgvector", "temporal", "minio", "clamav"],
     migration: "packages/database/prisma/migrations",
     contractVersion: "1.0",
-    tests: "run pnpm test",
+    verification: {
+      commands: [
+        "pnpm test",
+        "pnpm test:frontend",
+        "pnpm test:e2e",
+        "pnpm test:integration",
+        "uv run --frozen --project workers/document-ai python -m pytest workers/document-ai/tests",
+        "pnpm security:scan",
+        "pnpm contracts:check",
+        "pnpm build",
+      ],
+      mandatoryIntegrationProfile: {
+        SIROMIX_ENV: "test",
+        SIROMIX_INTEGRATION: "1",
+      },
+      platforms: ["windows-powershell", "ci-linux"],
+    },
     artifacts: { commit: version("git", ["rev-parse", "HEAD"]).value },
   };
   writeFileSync(
@@ -205,9 +221,25 @@ function waitForApplications(timeoutMs = 120_000) {
   throw new Error("STARTUP_READINESS_TIMEOUT");
 }
 
+function isProcessAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function startApplications() {
-  if (existsSync(processStatePath))
-    throw new Error("APPLICATIONS_ALREADY_STARTED");
+  if (existsSync(processStatePath)) {
+    const recordedProcesses = JSON.parse(
+      readFileSync(processStatePath, "utf8"),
+    );
+    if (recordedProcesses.every(({ pid }) => isProcessAlive(pid)))
+      throw new Error("APPLICATIONS_ALREADY_STARTED");
+    stopApplications();
+    console.warn("STALE_APPLICATION_STATE_RECOVERED");
+  }
   const processes = [
     startProcess(
       "web",
@@ -350,6 +382,23 @@ function performance() {
     ).length,
     medianMs: sorted[Math.floor(sorted.length / 2)],
     p95Ms: sorted[Math.ceil(sorted.length * 0.95) - 1],
+    toolVersions: {
+      node: process.version,
+      pnpm: "10.15.1",
+      python: "3.12.11",
+      uv: "0.8.14",
+    },
+    imageVersions: {
+      postgres: "pgvector/pgvector:pg17",
+      temporal: "temporalio/auto-setup:1.27.2",
+      temporalUi: "temporalio/ui:2.40.1",
+      minio: "minio/minio:RELEASE.2025-07-23T15-54-02Z",
+      clamav: "clamav/clamav:1.4.3",
+    },
+    firstRunDownloads: {
+      excludedFromCachedRuns: true,
+      durationMs: null,
+    },
     generatedAt: new Date().toISOString(),
   };
   writeFileSync(

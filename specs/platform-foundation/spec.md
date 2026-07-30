@@ -2,326 +2,258 @@
 
 ## 1. Objective
 
-Establish the minimum shared repository, runtime, security, persistence, workflow, storage, contract, observability, testing, CI, and developer-experience foundation required to implement DOCX Ingestion, AI Processing, and Exam Creation without inventing cross-cutting architecture or duplicating feature behavior.
+Establish the minimum safe shared foundation required to begin implementing Exam Creation, DOCX Ingestion, and AI Processing without redefining authentication, tenancy, persistence, object storage, Temporal, contracts, configuration, observability, testing, or local operations.
 
-Platform Foundation succeeds when a developer can bootstrap and verify the complete local platform from a clean supported machine, shared infrastructure contracts behave consistently across environments, and feature teams can implement their approved specifications without redefining authentication, tenancy, storage, database, Temporal, configuration, telemetry, testing, or deployment primitives.
+This specification has two explicit completion levels:
+
+1. **MVP Foundation Approved:** all requirements and acceptance criteria labeled **MVP Release Gate** are implemented, their mandatory tests pass, and Pulsar approves the MVP foundation.
+2. **Production Ready:** the MVP foundation is approved and all separately labeled **Production Hardening** requirements have been completed and verified before production deployment.
+
+Production Hardening is not a prerequisite for feature development or MVP Foundation approval.
 
 ## 2. Context
 
-The repository currently contains specifications but no application scaffold, dependency manifests, runtime configuration, migrations, containers, tests, or CI. The three implementation-ready feature specifications assume shared dependencies that do not yet exist.
+Exam Creation, DOCX Ingestion, and AI Processing require the same cross-cutting infrastructure. Platform Foundation supplies those shared primitives and interfaces while leaving feature entities, workflows, policies, retry decisions, retention, and user interfaces to their owning specifications.
 
-Platform Foundation is a non-user-facing enabling feature governed by SiroMix Constitution v1.1.0, particularly contract-first boundaries, reliable/idempotent processing, least privilege, testable correctness, local-first development, production parity, versioned schemas, rollback safety, and MVP discipline.
+The split in this revision prevents production-certification work from blocking safe MVP feature development. Tenant isolation, authentication, contract correctness, migration safety, deterministic processing, local development, security, and mandatory automated tests remain MVP release gates.
 
-Related feature behavior remains owned by its feature specification. Foundation supplies primitives and interfaces, not DOCX validation/canonicalization, AI requests or validation, Draft/Master lifecycle, mixing, or publishing.
+**Specification Status:** Implementation Ready.
 
-**Specification Status:** Implementation Ready. No Lyra review is required because this feature introduces no end-user or standalone administrative workflow.
+**UX Status:** No Lyra review is required because Platform Foundation introduces no end-user or standalone administrative workflow.
 
-**Post-Design Constitution Check:** Passed against Constitution v1.1.0. The selected foundation is a modular monolith plus independently deployable workers, not premature microservices; preserves engine boundaries; externalizes configuration; supports local parity; and defines measurable, testable, migration-safe infrastructure contracts.
+**Constitution Check:** Passed against Constitution v1.1.0. The scope preserves contract-first boundaries, least privilege, tenant isolation, local-first development, deterministic processing, migration safety, and release-blocking correctness tests.
 
 ## 3. Related Specifications
 
-- **Exam Creation:** `/specs/exam-creation/spec.md`, `tasks.md`, and `test-spec.md` depend on authentication/RBAC, tenancy, PostgreSQL migrations, private storage, Temporal orchestration, versioned validation contracts, observability, audit, local parity, and rollback.
-- **DOCX Ingestion:** `/specs/docx-ingestion/spec.md`, `tasks.md`, and `test-spec.md` depend on authenticated commands, private object storage, PostgreSQL, Temporal-compatible workers, ClamAV connectivity, parser isolation, versioned schema tooling, telemetry, and tenant-safe lifecycle hooks.
-- **AI Processing:** `/specs/ai-processing/spec.md`, `tasks.md`, and `test-spec.md` depend on authentication/RBAC, tenant context, PostgreSQL/outbox, Temporal, encrypted storage, schema tooling, provider-secret management, deterministic local adapters, telemetry, and deployment compatibility.
-- **Constitution:** `/specs/constitution.md` is controlling for all conflicts.
-- **Repository instructions:** `/AGENTS.md` fixes the approved technology families and SDD role boundaries.
+- **Exam Creation:** depends on authentication/RBAC, tenancy, PostgreSQL/Prisma, private storage, Temporal, idempotency/outbox/audit primitives, versioned contracts, observability, local testing, and rollback foundations.
+- **DOCX Ingestion:** depends on authenticated tenant commands, private object storage, PostgreSQL, Temporal-compatible workers, ClamAV connectivity, service identities, versioned contracts, and safe telemetry.
+- **AI Processing:** depends on authentication/RBAC, tenant context, PostgreSQL/outbox, Temporal, private storage, schema tooling, provider configuration hooks, deterministic adapters, and safe telemetry.
+- **Constitution:** `/specs/constitution.md` controls all conflicts.
 
-Cross-spec resolutions:
+Boundary rules:
 
-- Foundation owns shared primitives; feature specs own business entities, workflows, states, limits, retry policies, and UI.
-- Feature retry rules override foundation defaults only by becoming stricter or through an explicit approved specification.
-- Foundation provides pgvector availability but no embeddings, indexes, retrieval, or RAG behavior.
-- Foundation provides audit/outbox primitives but does not define feature audit-event meanings.
-- Foundation provides object lifecycle hooks but feature specs define retention schedules and reference semantics.
-- Foundation provides support-grant mechanics; feature specs define which content/actions a grant permits.
+- Foundation owns shared primitives; feature specifications own feature behavior.
+- Foundation registers only content-free smoke workflows and shared envelopes.
+- Foundation creates no DOCX, canonical, AI, Draft/Master Exam, mixing, publishing, vector, or RAG behavior.
+- A feature may narrow shared retry/security rules; broadening requires an approved specification update.
 
 ## 4. User Roles
 
-Platform Foundation defines identity types and enforcement primitives:
-
-- **Teacher:** interactive tenant member; receives only feature permissions explicitly granted by feature specifications.
-- **Tenant Admin:** interactive tenant administrator; receives only tenant administration and feature permissions explicitly specified.
-- **Platform support:** platform operator with no customer-content access by default; content access requires a current time-limited, tenant/resource/action-scoped support grant.
-- **Workflow service:** non-human service identity allowed to start/query only registered workflow contracts.
-- **Worker service:** non-human service identity allowed to poll assigned task queues and access only required database/storage/provider resources.
-- **CI/deployment identity:** non-human identity restricted to build, migration, deployment, and verification operations for an environment.
+- **Teacher:** tenant member; receives only feature permissions declared by feature specifications.
+- **Tenant Admin:** tenant-scoped administrator; may provision/deactivate tenant memberships.
+- **Platform support:** default-deny; customer access requires a scoped, approved, expiring support grant.
+- **Workflow/worker service:** non-human, environment-scoped identity restricted to registered queues and required resources.
+- **CI/deployment identity:** non-human identity restricted to build, migration, deployment, and verification operations.
 - **Unauthenticated/unauthorized principal:** receives no tenant or private-resource access.
 
-Foundation defines no feature permission such as upload, regenerate, approve, mix, or publish.
+Foundation defines no upload, regenerate, approve, mix, publish, or other feature permission.
 
 ## 5. Business Rules
 
-- **BR-001 — Repository model:** Use one pnpm workspace monorepo with `apps/web`, `apps/api`, `workers/document-ai`, `packages/contracts`, `packages/config`, `packages/database`, `packages/observability`, `packages/testkit`, `infra/docker`, and `docs`. Feature modules remain inside their owning application/worker boundary until an approved need justifies extraction.
-- **BR-002 — Runtime baseline:** Use Node.js 24 LTS for Next.js/NestJS tooling, pnpm 10, Python 3.12, and `uv` 0.8. The repository pins an exact supported patch of each tool through committed tool metadata and lockfiles; clean bootstrap rejects a different major/minor line. Patch upgrades within these lines require a reviewed dependency-update change that updates the pins, locks, compatibility evidence, and readiness report.
-- **BR-003 — Applications:** `apps/web` is Next.js with TypeScript, Tailwind CSS, and shadcn/ui; `apps/api` is NestJS with TypeScript, REST, Prisma, and Temporal Client; `workers/document-ai` is Python with Temporal Python SDK and Pydantic.
-- **BR-004 — Dependency management:** JavaScript/TypeScript uses pnpm workspaces with one root `pnpm-lock.yaml`. Python uses `uv` with one committed lock for the worker workspace. Runtime dependencies may not be installed implicitly by startup scripts.
-- **BR-005 — Naming/imports:** TypeScript uses strict mode, kebab-case folders, PascalCase exported types/classes, camelCase values, and workspace package imports rather than cross-application relative imports. Python uses snake_case modules/functions, PascalCase classes, and explicit package imports. Circular cross-package dependencies are prohibited.
-- **BR-006 — Generated artifacts:** Contract-generated TypeScript/Python models, Prisma client output, API metadata, and test reports have declared source, command, owner, and output path. Generated files are either reproducibly committed by policy or ignored; the same artifact may not be partly hand-edited.
-- **BR-007 — Local startup:** One documented root command starts required Docker services, applies/validates migrations, prepares deterministic local identities/data, and starts web, API, and registered workers. Start is idempotent and fails with actionable diagnostics when prerequisites are missing.
-- **BR-008 — Local services:** Docker Compose supplies PostgreSQL with pgvector, Temporal, Temporal Web UI, MinIO, and ClamAV. Application processes may run on the host for fast development; CI may run them in containers. No production credential is required locally.
-- **BR-009 — Environment parity:** Local, test, staging, and production use the same application contracts, migration mechanism, task-queue rules, configuration schema, storage interface, authentication token contract, telemetry schema, and health checks. Differences are external values/adapters, not source branches.
-- **BR-010 — Database ownership:** PostgreSQL is the system database. Prisma schema/migrations and database client live in `packages/database`. Feature specs own feature tables and invariants; Foundation owns only shared identity/tenant/membership/service identity/support grant, idempotency, outbox, audit-envelope, and migration metadata primitives.
-- **BR-011 — pgvector:** The extension is installed and health-checked in local/test and declared as a production database prerequisite. Foundation creates no vector column/index, embedding, retrieval, or RAG behavior.
-- **BR-012 — Stable data conventions:** Persisted identifiers use RFC 9562 UUIDv7 consistently across TypeScript and Python. Random or deterministic test generators must preserve valid UUIDv7 layout and ordering semantics. Timestamps are timezone-aware UTC. Mutable shared records use optimistic concurrency. Money uses integer minor units or fixed-precision decimals with explicit currency.
-- **BR-013 — Tenant enforcement:** Every tenant-owned database record includes tenant scope or an immutable parent that enforces it. Request/workflow/storage context carries tenant ID server-side. Repository/query helpers require tenant scope, and cross-tenant access is denied without existence disclosure.
-- **BR-014 — Transactions/outbox:** Shared transaction helpers atomically persist domain changes and an outbox envelope. Consumers are idempotent and at-least-once safe. Foundation does not define feature event payload semantics.
-- **BR-015 — Idempotency:** Shared idempotency primitives support tenant/operation/key scope, request hash, in-progress/completed/failed outcome, authoritative expiry, and replay. Feature specs define key scope and retention where stricter.
-- **BR-016 — Migration safety:** Migrations are immutable after shared use, ordered, reviewed, tested from empty and prior supported state, backward compatible for rolling deployment, and separated from destructive cleanup. Production rollback uses application rollback plus forward corrective migration; down migrations are test aids only unless explicitly proven safe.
-- **BR-017 — Temporal local/runtime:** Local Compose provides Temporal and Web UI. NestJS owns the client boundary. TypeScript and Python workers register through explicit modules with versioned workflow/activity contracts.
-- **BR-018 — Task queues:** Queue names follow `siro-{environment}-{domain}-v{major}`. Each queue has one owning feature/domain and an allowlisted worker identity. Foundation provides a smoke-test queue only; it does not register feature workflows.
-- **BR-019 — Retry foundation:** Workflows have no blind workflow-level retry. The shared activity baseline is exponential backoff with at most three total attempts, one-second initial interval, factor 2, and 30-second maximum interval. A feature must classify retryability and may narrow this; broader retries require an approved spec.
-- **BR-020 — Workflow reliability:** Shared contracts carry workflow/attempt, tenant, correlation, causation, idempotency, schema, and deadline data. Workers support heartbeats for long activities, cancellation propagation, deterministic replay, privacy-safe tracing, and at-least-once delivery.
-- **BR-021 — Authentication choice:** MVP authentication is a custom NestJS-owned JWT/session system so local development and production share the same contract without a required third-party identity service. Interactive login requires tenant slug plus normalized email; email uniqueness is enforced within a tenant, and the same email may belong to different tenants without linking their identities. Passwords use Argon2id with at least 19 MiB memory, two iterations, and parallelism one; stored hashes include parameters and are upgraded after successful authentication when policy increases. Access JWTs use EdDSA with Ed25519 keys, a required `kid`, and a 15-minute maximum lifetime. Verification accepts only the configured current signing key and explicitly retained previous verification keys during bounded rotation; algorithm substitution is rejected.
-- **BR-021A — Refresh sessions and provisioning:** Refresh credentials are opaque 256-bit random values stored only as keyed hashes, rotate on every use, expire after seven days of inactivity and 30 days absolute, and revoke the complete token family on confirmed reuse. Foundation provides an idempotent, audited, server-side provisioning command/API: an authorized deployment identity creates the first tenant and Tenant Admin; thereafter a Tenant Admin may create/deactivate identities and Teacher/Tenant Admin memberships only within that tenant. Production provisioning requires explicit tenant and identity inputs and never uses deterministic/default credentials. Local/test bootstrap alone may create documented deterministic identities. No invitation, password-reset, MFA, SSO, email-delivery, or administration UI is included.
-- **BR-022 — Browser token safety:** Refresh credentials use Secure, HttpOnly, SameSite cookies in non-local environments; access tokens are not persisted in browser local storage. CSRF protection applies to cookie-authenticated mutations. Local exceptions are explicit safe configuration, never production fallbacks.
-- **BR-023 — Authorization:** NestJS guards/policies enforce role, tenant, resource, and action server-side. Next.js may hide unavailable actions but is never authoritative. Denials are privacy-safe and auditable when security-relevant.
-- **BR-024 — Service authentication:** Workflow, worker, CI, and deployment identities use environment-scoped credentials with audience, issuer, scope, expiry, rotation, and revocation. Human tokens cannot substitute for worker credentials. Local deterministic service identities are test/development only.
-- **BR-025 — Support grants:** A shared grant records tenant, resources/actions, support actor, approving Tenant Admin or authorized governance actor, reason, start/expiry, revocation, and audit references. Default duration is at most four hours unless a stricter feature rule applies. No grant permits cross-tenant access or secret access.
-- **BR-026 — Object storage:** A versioned `ObjectStorage` interface supports put/get-stream/head/delete, authorized signed access, existence-safe errors, lifecycle tags, legal-hold hooks, and deterministic failure injection. MinIO is the local/test adapter; Cloudflare R2-compatible S3 is the production-target adapter.
-- **BR-027 — Storage privacy:** Buckets/namespaces are private by default. Object keys use opaque tenant-private prefixes and stable object IDs, never filenames, user data, or raw content hashes. Signed access is single-purpose, least privilege, and expires in at most five minutes unless a feature specifies a stricter duration.
-- **BR-028 — Storage lifecycle boundary:** Foundation exposes deletion, recoverable-state, reference-check, lifecycle, and legal-hold hooks. Feature owners define actual retention, recoverability, deduplication, and reference semantics. Storage adapters never infer feature deletion.
-- **BR-029 — Configuration:** Every process validates typed configuration at startup and distinguishes required, optional-with-default, and forbidden values. Configuration errors fail before accepting work. `.env.example` contains names and safe examples only.
-- **BR-030 — Secrets:** Secrets are supplied through environment/platform secret bindings, never committed, logged, exposed to the browser, embedded in images, or placed in contract fixtures. Secret values support rotation without source changes. CI secret scanning blocks release.
-- **BR-031 — Operational configuration:** Any configuration affecting compatibility, security classification, retries, pricing, provider privacy, or deterministic output has an explicit version recorded by its owning feature. Foundation supplies the versioning mechanism only.
-- **BR-032 — Shared contracts:** `packages/contracts` contains versioned JSON Schemas, OpenAPI-derived transport types, stable envelope types, compatibility metadata, and fixtures. It contains no feature orchestration or hidden business decisions.
-- **BR-033 — Contract sources:** JSON Schema is authoritative for cross-runtime persisted/message contracts. Zod validates TypeScript boundaries and Pydantic validates Python boundaries against generated or conformance-tested models. Contract generation must be deterministic and drift-checked.
-- **BR-034 — Compatibility:** Writers emit the current version. Readers support the current and immediately previous compatible minor where required by owning specs. Breaking majors require dual-read-before-write rollout, consumer readiness, migration plan, and rollback matrix.
-- **BR-035 — Observability:** OpenTelemetry defines trace propagation and metrics; NestJS uses Pino structured logging and Python uses structlog. Correlation and causation propagate across HTTP, Temporal, database/outbox, storage, and provider adapters.
-- **BR-036 — Telemetry privacy:** Ordinary logs, metrics, traces, errors, health responses, and audit envelopes never contain complete source/canonical content, prompts, questions, options, answers, raw provider responses, asset bytes, passwords/tokens/secrets, signed URLs, or sensitive object keys.
-- **BR-037 — Audit foundation:** Shared audit envelopes record stable ID, tenant where applicable, actor/service, event type owned by a feature, target references, timestamp, correlation/causation, and minimal safe metadata. Audit records are append-only; feature specs define retention and content.
-- **BR-038 — Health:** Each service exposes liveness and readiness separately. Readiness checks only dependencies required to accept that service's work and returns safe component status without credentials, topology secrets, or customer data.
-- **BR-039 — Test foundation:** Jest supports TypeScript unit/integration tests, Testing Library supports components, Playwright supports browser E2E, and Pytest supports Python. Shared testkit supplies deterministic clocks/IDs, tenant fixtures, database isolation, MinIO/Temporal/provider fakes, failure injection, and sensitive-marker assertions.
-- **BR-040 — Test isolation:** Automated tests never depend on production credentials or live production services. Parallel tests use isolated database schemas/databases, object prefixes, Temporal namespaces/task queues, and tenant IDs. Production-provider/infrastructure tests are separately gated.
-- **BR-041 — Coverage/release gates:** Coverage is collected per application/package. Business-critical units target at least 90% where feature specs require it. Contract, migration, tenant isolation, authorization, security, idempotency, and redaction failures always block release regardless of aggregate coverage.
-- **BR-042 — CI:** GitHub Actions runs deterministic install/lock verification, formatting, lint, type check, generated-contract drift, unit, contract, integration, workflow, migration, security/secret/dependency/container scans, builds, and smoke tests. Pull requests receive no deployment credentials by default.
-- **BR-043 — Artifacts:** CI produces immutable, content-addressed OCI images for web, API, and workers plus migration and contract artifacts tied to one commit. The same validated artifacts are promoted; environment configuration is external.
-- **BR-044 — Deployment:** Foundation defines container/runtime contracts for Railway, Render, Fly.io, Cloud Run, or VPS without selecting a production host. Deployment order is expand migrations, compatible API/workers, web, verification, then deferred cleanup. Rollback never runs destructive down migration automatically.
-- **BR-045 — Developer commands:** Root commands cover `bootstrap`, `dev`, `stop`, `health`, `db:migrate`, `db:validate`, `test`, `test:integration`, `test:e2e`, `lint`, `typecheck`, `build`, `reset:test-data`, and `doctor`. Names map to documented non-interactive scripts.
-- **BR-046 — Windows:** Native Windows PowerShell development is supported with Docker Desktop and pinned host runtimes. WSL is optional and not required. Scripts use cross-platform Node/Python entry points or provide equivalent PowerShell-safe wrappers.
-- **BR-047 — Documentation:** Prerequisites, architecture map, commands, ports, environment variables, migrations, local identities, troubleshooting, data reset, CI gates, deployment artifacts, and rollback are documented and versioned with the code.
+### 5.1 MVP Release Gate
+
+- **MVP-BR-001 — Repository and runtime:** Use a pnpm monorepo with minimal Next.js web, NestJS API, Python worker, shared packages, Docker infrastructure, and documentation. Pin Node 24, pnpm 10, Python 3.12, uv 0.8, container images, and lockfiles.
+- **MVP-BR-002 — Local operation:** Document one root workflow for bootstrap, development start, health, stop, migrations, tests, build, readiness, and guarded test reset. Local operation requires no production credential.
+- **MVP-BR-003 — Local dependencies:** Docker Compose supplies PostgreSQL/pgvector, Temporal/Web UI, MinIO, and ClamAV. Application and worker health are named and machine-readable.
+- **MVP-BR-004 — Configuration:** Every process validates typed configuration before work. Secrets remain external, browser-public values are allowlisted, insecure production configuration fails closed, and safe examples contain no real secret.
+- **MVP-BR-005 — Shared persistence ownership:** Foundation owns only Tenant, UserIdentity, TenantMembership, RefreshSession, ServiceIdentity, SupportGrant, IdempotencyRecord, OutboxEnvelope, AuditEnvelope, and migration metadata primitives.
+- **MVP-BR-006 — Tenant and transaction safety:** Tenant-owned access requires server-side tenant context. Cross-tenant access is non-disclosing. Shared transactions support optimistic concurrency, idempotency, outbox, append-only audit envelopes, UTC timestamps, and UUIDv7 identifiers.
+- **MVP-BR-007 — Migration safety:** Migrations are ordered and immutable after shared use. Empty-database migration and current supported-state migration must pass. Destructive cleanup is separated and never runs automatically during rollback. Rollback uses compatible application rollback and forward correction.
+- **MVP-BR-008 — Temporal foundation:** Queue names are versioned and environment/domain scoped. Foundation provides client/worker registration, bounded baseline activity retry, heartbeat, cancellation, replay testing, correlation, and a content-free smoke workflow only.
+- **MVP-BR-009 — Authentication:** Interactive authentication uses tenant slug plus normalized email. Passwords use Argon2id with at least 19 MiB memory, two iterations, and parallelism one. Access tokens use Ed25519/EdDSA, required known `kid`, issuer/audience validation, and a maximum 15-minute lifetime.
+- **MVP-BR-010 — Sessions and provisioning:** Refresh credentials contain at least 256 bits of entropy, are stored only as keyed hashes, rotate on use, expire after seven days inactivity or 30 days absolute, and revoke their family on confirmed reuse. Production provisioning is explicit, audited, idempotent, and contains no deterministic/default credential.
+- **MVP-BR-011 — Authorization and support:** Role, tenant, resource, and action authorization is server-side. Support grants are approved, tenant/resource/action scoped, revocable, auditable, and no longer than four hours by default. Grants never permit cross-tenant or secret access.
+- **MVP-BR-012 — Object storage:** A versioned streaming interface supports put, get-stream, head, delete, health, signed access, lifecycle tags, legal-hold hooks, and safe errors. MinIO and R2-compatible adapters use private buckets and opaque tenant-private keys. Signed access expires within five minutes.
+- **MVP-BR-013 — Authoritative contract version:** The authoritative Foundation Envelope schema version is **`1.0`**. Current writers emit `1.0`; current readers accept `1.0` only. No `1.1` document is valid until an authoritative `1.1` schema and compatibility fixtures are approved. Before a future `1.1` writer is enabled, readers must accept both authoritative `1.0` and `1.1` schemas. Breaking majors require dual-reader rollout before new writes.
+- **MVP-BR-014 — Contract generation:** JSON Schema is authoritative. Zod, Pydantic, OpenAPI, metadata, and fixtures are generated from or conformance-tested against the same schema. Drift or semantic disagreement blocks the release gate.
+- **MVP-BR-015 — Observability and privacy:** Correlation/causation/trace context is represented consistently at shared boundaries. Structured Node/Python logging, safe errors, health, and audits redact prohibited content, credentials, signed URLs, and private object keys.
+- **MVP-BR-016 — Deterministic testing:** Mandatory unit, contract, integration, Temporal, storage, authentication, migration-safety, frontend smoke, E2E smoke, security, build, and boundary tests run through documented commands. Mandatory integration tests fail rather than silently skip when their test profile is absent.
+- **MVP-BR-017 — CI safety:** CI performs locked install, format, lint, typecheck, contract drift, unit, frontend, E2E, Python, integration, security, build, and artifact-metadata checks. Pull requests receive no production deployment secret and cannot promote production artifacts.
+- **MVP-BR-018 — Boundaries and readiness:** Static/runtime checks reject feature-owned behavior. A safe machine-readable readiness report identifies supported tools, dependencies, migrations, contract version, mandatory commands, and artifact commit.
+
+### 5.2 Production Hardening
+
+The following requirements are required before production deployment but do not block **MVP Foundation Approved**:
+
+- **PH-BR-001 — Historical migration certification:** Exercise every retained historical database snapshot, partial/out-of-order migrations, lock contention, rolling old/new readers, and production-like forward correction.
+- **PH-BR-002 — Full telemetry traversal:** Prove trace propagation and redaction through a complete HTTP → Temporal → database/outbox → storage → provider-adapter integration flow with actual captured telemetry.
+- **PH-BR-003 — Exhaustive failure injection:** Inject every lifecycle failure point into every shared dependency and prove bounded recovery, preserved commits, and no duplication or leakage.
+- **PH-BR-004 — Cross-platform certification:** Execute the complete lifecycle, including edge cases, on clean hosted Windows and Linux runners.
+- **PH-BR-005 — Immutable artifact promotion:** Produce and verify content-addressed OCI images, SBOMs, provenance, container scans, migration/contract bundles, deployment verification, and unchanged promotion from a clean hosted commit.
+- **PH-BR-006 — Production rollout certification:** Exercise partial rollout, traffic gating, application rollback, forward correction, deferred cleanup, and incompatible-version rejection in a production-like environment.
+- **PH-BR-007 — Extended performance/reliability:** Repeat startup/restart and dependency-recovery profiles on release infrastructure and retain operational evidence.
+- **PH-BR-008 — Operational readiness:** Finalize hosting, registry, managed PostgreSQL/R2, secrets manager, TLS/domains, telemetry destinations, scaling, backups, disaster recovery, and on-call procedures.
 
 ## 6. Functional Requirements
 
-- **FR-001 — Scaffold workspace:** Create the BR-001 layout, pinned tool metadata, dependency manifests/locks, strict language configuration, boundary rules, generated-output policy, and minimal buildable web/API/worker/package entry points.
-- **FR-002 — Bootstrap locally:** Validate prerequisites, materialize safe local configuration, start Compose dependencies, wait on health, apply/validate migrations, seed deterministic local identities, and start application processes through documented root commands.
-- **FR-003 — Compose dependencies:** Provide PostgreSQL/pgvector, Temporal/Web UI, MinIO, and ClamAV with pinned images, private/default-safe networking, persistent development volumes, health checks, and deterministic test profiles.
-- **FR-004 — Configure applications:** Validate the same typed configuration schema per process and environment, expose safe `.env.example` files, reject forbidden/missing values, and support secret rotation/config versioning.
-- **FR-005 — Provide persistence:** Provide Prisma client/migrations, tenant-aware transaction helpers, optimistic concurrency, idempotency, outbox, audit envelope, UUID/time/money conventions, test isolation, and pgvector readiness without feature tables.
-- **FR-006 — Provide Temporal boundary:** Provide NestJS client, TypeScript/Python worker registration, versioned workflow/activity envelopes, task-queue helpers, retry/cancellation/heartbeat/tracing defaults, deterministic test environment, and a foundation smoke workflow only.
-- **FR-007 — Provide authentication:** Implement the BR-021 through BR-025 identity/session, provisioning, RBAC/policy, tenant context, service identity, local seed identity, signing-key and refresh-session rotation/revocation, support-grant, CSRF, and audit primitives.
-- **FR-008 — Provide object storage:** Implement versioned MinIO and R2-compatible adapters, private opaque keys, streaming operations, authorized signed access, lifecycle/legal-hold hooks, health, failure injection, and tenant isolation.
-- **FR-009 — Provide shared contracts:** Establish authoritative JSON Schema/OpenAPI ownership, deterministic TypeScript/Python model generation or conformance, version metadata, fixtures, drift checks, compatibility tests, and consumer-test hooks.
-- **FR-010 — Provide observability:** Establish structured logs, OpenTelemetry trace/metric propagation, safe errors, audit envelopes, health/readiness, local inspection, and redaction/sensitive-marker verification.
-- **FR-011 — Provide test infrastructure:** Configure Jest, Testing Library, Playwright, Pytest, deterministic testkit, isolated dependencies, failure injection, coverage, and separately controlled production integration profiles.
-- **FR-012 — Provide CI:** Implement GitHub Actions gates, locked/reproducible installs, caches that do not affect correctness, security scanning, migration checks, image builds, smoke tests, and artifact provenance.
-- **FR-013 — Provide deployment contracts:** Build immutable OCI/migration/contract artifacts, define promotion inputs, migration/rollout/health verification order, environment binding, and non-destructive rollback.
-- **FR-014 — Document developer operation:** Document prerequisites and every BR-045 command, clean-machine bootstrap, Windows usage, optional WSL, ports, local identities, troubleshooting, reset safety, CI, artifacts, and rollback.
-- **FR-015 — Publish foundation readiness:** Produce a machine-verifiable foundation health/contract report showing supported runtime/tool versions, dependency health, migration state, contract drift state, test status, and artifact identities without sensitive values.
+### 6.1 MVP Release Gate
+
+- **MVP-FR-001:** A developer can install locked dependencies, build minimal applications/workers, start local dependencies and processes, inspect health, and stop them using documented root commands.
+- **MVP-FR-002:** API/database/storage/workflow helpers require tenant context and return safe stable failures.
+- **MVP-FR-003:** Authentication, refresh sessions, service identities, tenant provisioning, RBAC, and support grants enforce MVP-BR-009 through MVP-BR-011.
+- **MVP-FR-004:** PostgreSQL/pgvector migrations and shared persistence primitives satisfy MVP-BR-005 through MVP-BR-007.
+- **MVP-FR-005:** Temporal and storage adapters satisfy MVP-BR-008 and MVP-BR-012 using deterministic local services.
+- **MVP-FR-006:** The Foundation Envelope `1.0` validates equivalently through JSON Schema, Zod, Pydantic, and OpenAPI fixtures; `1.1` and unsupported majors are rejected.
+- **MVP-FR-007:** Safe observability utilities preserve correlation metadata while redacting prohibited keys and credential-like values in Node and Python.
+- **MVP-FR-008:** Mandatory test commands, integration-profile enforcement, CI configuration, boundary checks, and readiness reporting satisfy MVP-BR-016 through MVP-BR-018.
+
+### 6.2 Production Hardening
+
+- **PH-FR-001:** Complete PH-BR-001 through PH-BR-008 with retained machine-readable evidence tied to the release commit.
 
 ## 7. Non-Functional Requirements
 
-- **NFR-001 — Bootstrap performance:** The reference developer profile is Windows 11, an x86-64 CPU with at least eight logical cores, 16 GiB host RAM, SSD storage, and Docker Desktop allocated at least four CPU cores and 8 GiB RAM. With dependencies/images cached, Docker running, service volumes retained, and all SiroMix services initially stopped, measure 20 independent `dev` starts using the documented readiness endpoint; at least 19 must reach all required ready states within five minutes. Record individual durations, tool/image versions, and median/P95 calculation. First-run download time is measured and reported separately and does not count toward this target.
-- **NFR-002 — Command responsiveness:** `doctor` reports local prerequisite/configuration problems within 30 seconds excluding Docker daemon startup; `health` reports current service/dependency readiness within 10 seconds.
-- **NFR-003 — Reliability:** Restarting any application, worker, or local dependency preserves committed data and converges to correct readiness without manual record repair.
-- **NFR-004 — Security:** Apply least privilege, private networking/storage, strong password hashing, short-lived/revocable credentials, CSRF protection, safe headers, validated input/config, dependency/container/secret scanning, and auditable security actions.
-- **NFR-005 — Privacy:** Shared primitives and telemetry are content-agnostic and pass sensitive-marker redaction tests across Node, Python, workflow, storage, database, errors, and CI output.
-- **NFR-006 — Portability:** Supported Windows PowerShell and CI/Linux workflows expose equivalent commands/contracts. WSL is optional. Host-specific paths never enter persisted contracts.
-- **NFR-007 — Determinism:** Locked dependencies, pinned images/tool majors, deterministic generators, controlled clocks/IDs, and isolated test resources produce repeatable results.
-- **NFR-008 — Compatibility:** Shared contracts, migrations, task queues, storage interface, auth tokens, and telemetry follow declared version/compatibility rules and fail explicitly when unsupported.
-- **NFR-009 — Maintainability:** Boundary linting and dependency rules prevent feature business logic from moving into shared packages and prevent applications from importing each other's internals.
-- **NFR-010 — Scalability:** API and workers remain stateless between requests/tasks except durable external state; multiple replicas may run without local-memory correctness dependencies.
-- **NFR-011 — Availability target support:** Foundation exposes measurements needed for downstream 99.5% service calculations but does not redefine feature outage/exclusion rules.
-- **NFR-012 — Recovery:** Database, Temporal, storage, migration, outbox, and configuration failures produce bounded, diagnosable, idempotent recovery paths without silent data loss.
+### 7.1 MVP Release Gate
+
+- **MVP-NFR-001 — Security:** Least privilege, tenant isolation, secure secret handling, safe file/storage behavior, production TLS/cookie fail-closed policy, and privacy-safe diagnostics are mandatory.
+- **MVP-NFR-002 — Determinism:** Locked installs, contract generation, tests, IDs/clocks, retries, and local adapters produce repeatable outcomes.
+- **MVP-NFR-003 — Reliability:** Committed transaction/outbox/idempotency/session/workflow state survives retry or restart without duplicate logical effects.
+- **MVP-NFR-004 — Maintainability:** Shared packages contain interfaces/envelopes/utilities only and remain free of feature orchestration/business rules.
+- **MVP-NFR-005 — Local readiness:** Supported local Windows development and CI/Linux application architecture use the same contracts, migrations, queues, and adapters.
+
+### 7.2 Production Hardening
+
+- **PH-NFR-001:** Production certification evidence must be generated from a clean immutable commit and retained with the release.
+- **PH-NFR-002:** Production operational targets, scaling, backups, recovery time, and on-call thresholds must be approved before deployment.
 
 ## 8. Data Requirements
 
-Foundation may persist only these shared logical primitives:
+### 8.1 MVP Release Gate
 
-- **Tenant:** stable ID, immutable slug/identity, display metadata, status, timestamps, and concurrency value.
-- **UserIdentity:** stable ID, normalized login identity, password hash/algorithm metadata, status, security timestamps, and no feature profile data.
-- **TenantMembership:** tenant/user, role set limited to shared role vocabulary, status, timestamps, and uniqueness.
-- **RefreshSession:** stable ID, user/tenant, hashed token family, expiry, rotation/revocation/reuse-detection metadata, client-safe context, and timestamps.
-- **ServiceIdentity:** stable ID, environment, audience/scopes, credential version/status, rotation/revocation, and timestamps.
-- **SupportGrant:** stable ID, tenant, support actor, approver, resource/action scope, reason, start/expiry/revocation, and audit references.
-- **IdempotencyRecord:** tenant where applicable, operation/key, request hash, status, safe response reference, authoritative expiry, timestamps, and uniqueness.
-- **OutboxEnvelope:** stable ID, tenant where applicable, owner/event type/version, payload reference or minimal payload, correlation/causation, state, attempts, availability time, and timestamps.
-- **AuditEnvelope:** append-only identity, tenant where applicable, actor/service, feature-owned event type, target references, safe metadata, correlation/causation, and UTC timestamp.
-- **MigrationMetadata:** migration identity/checksum, application state/time, artifact/commit identity, and compatibility metadata where not supplied by Prisma.
+- Foundation persists only the shared models listed in MVP-BR-005.
+- Every tenant-owned shared record carries tenant scope or an immutable tenant-scoped parent.
+- IDs are UUIDv7; timestamps are timezone-aware UTC; mutable shared records use optimistic concurrency where applicable.
+- Outbox and audit envelopes carry schema, owner/event, tenant, correlation, causation, and safe reference metadata.
+- Object keys are opaque and tenant private.
+- The authoritative Foundation Envelope schema is `1.0`; no persisted `1.1` envelope is valid under this revision.
 
-Foundation must not persist source documents, canonical blocks/assets/issues, AI attempts/results/questions/cost records, Exam workflows/Drafts/Masters, permutation/answer matrices, templates, or published artifacts.
+### 8.2 Production Hardening
 
-Shared contract envelopes require:
-
-- `schemaVersion`
-- stable message/request/event ID
-- tenant ID where applicable
-- actor/service identity
-- correlation and causation IDs
-- idempotency key where applicable
-- occurred/requested timestamp in UTC
-- payload type/version owned by the feature
-- safe trace metadata
+- Historical migration fixtures, artifact manifests, SBOMs, provenance, scan reports, deployment evidence, and operational reports are retained as release evidence rather than product-domain data.
 
 ## 9. User Experience Requirements
 
-Platform Foundation is non-user-facing. It introduces no product screen, Teacher journey, or Tenant Admin workflow. Developer commands and diagnostics are developer experience, not Lyra-owned product UX.
-
 ### 9.1 User Goals
 
-- Developers can bootstrap, run, test, diagnose, and stop the platform predictably.
-- Feature implementers can rely on stable shared interfaces without understanding adapter internals.
-- Operators can verify health and artifact/migration compatibility without accessing customer content.
+No standalone user workflow is introduced. Feature teams receive predictable authenticated, tenant-safe, observable infrastructure.
 
 ### 9.2 Primary User Journey
 
-1. Install documented supported prerequisites.
-2. Clone the repository and run `bootstrap`.
-3. Run `dev`; dependencies become healthy, migrations validate/apply, local identities seed, and applications/workers become ready.
-4. Run `health` and the deterministic test commands.
-5. Implement a feature only inside its approved boundary using shared contracts.
+Not applicable to end users. The developer journey is bootstrap → start → health → test/build → stop.
 
 ### 9.3 Alternative User Flows
 
-- Run only dependency services for tests.
-- Diagnose configuration/tool/Docker failures with `doctor`.
-- Reset isolated test data without deleting development or production data.
-- Run CI-equivalent checks locally.
-- Use optional WSL while preserving the same commands/contracts.
+Actionable diagnostics cover incompatible tools, unavailable Docker, unhealthy dependencies, invalid configuration, migration failure, and port collision.
 
 ### 9.4 Interaction Rules
 
-- Commands are non-interactive by default in CI and explain any required confirmation locally.
-- Destructive reset commands require an explicit test-environment guard and exact target display.
-- Diagnostics identify the failing prerequisite/dependency and remediation without exposing secrets.
+Health and error output is safe and machine-readable. No secret or customer content is displayed.
 
 ### 9.5 Loading, Empty, Success, and Error States
 
-- Startup reports named dependency/application readiness rather than a generic wait.
-- Success identifies ready services, applied migration state, and safe local URLs.
-- Failure exits nonzero, names the failing check, and leaves already committed data intact.
-- An empty database is migrated and seeded only with deterministic local/test foundation identities.
+Processes expose liveness/readiness. Unavailable required dependencies produce nonzero, classified outcomes.
 
 ### 9.6 Validation, Feedback, and Recovery
 
-- Validate tools and configuration before starting expensive services where possible.
-- Retry only startup readiness probes, not permanent configuration/migration failures.
-- State which services remain safe and which command recovers the failure.
+Startup fails before work on invalid configuration. Retryable dependency recovery does not mutate committed records manually.
 
 ### 9.7 Accessibility and Responsive Behavior
 
-CLI output uses text/symbols in addition to color, supports `NO_COLOR`, and remains readable in standard PowerShell and CI logs. Web UIs supplied by dependencies are not customized by Foundation.
+The minimal web shell and future shared components use semantic, keyboard-accessible foundations. Feature accessibility remains feature-owned.
 
 ### 9.8 UX Decisions
 
-- No product UI or standalone administration UI is introduced.
-- Developer commands are the only direct interaction surface.
-- Lyra review is not required.
+No end-user UX decision is introduced.
 
 ### 9.9 UX Open Questions
 
-No UX question remains.
+None.
 
 ## 10. Workflow / User Flow
 
-Bootstrap:
-
 ```text
-CHECK_PREREQUISITES
-  -> VALIDATE_CONFIGURATION
-  -> INSTALL_LOCKED_DEPENDENCIES
-  -> START_DEPENDENCIES
-  -> WAIT_FOR_HEALTH
-  -> APPLY_AND_VALIDATE_MIGRATIONS
-  -> SEED_LOCAL_FOUNDATION_IDENTITIES
-  -> START_APPLICATIONS_AND_WORKERS
-  -> VERIFY_READINESS
+BOOTSTRAP
+  -> VALIDATE_TOOLS_AND_CONFIGURATION
+  -> START_LOCAL_DEPENDENCIES
+  -> APPLY_SAFE_MIGRATIONS
+  -> START_WEB_API_AND_WORKERS
+  -> VERIFY_NAMED_READINESS
+  -> RUN_MVP_TEST_GATES
+  -> MVP_FOUNDATION_REVIEW
 ```
 
-Deployment:
+Production deployment adds the non-blocking hardening flow:
 
 ```text
-VERIFY_ARTIFACTS_AND_CONFIGURATION
-  -> APPLY_EXPAND_MIGRATIONS
-  -> DEPLOY_COMPATIBLE_API_AND_WORKERS
-  -> DEPLOY_WEB
-  -> VERIFY_HEALTH_CONTRACTS
-  -> ENABLE_TRAFFIC
-  -> DEFER_CLEANUP_MIGRATIONS
+MVP_FOUNDATION_APPROVED
+  -> COMPLETE_PRODUCTION_HARDENING
+  -> BUILD_IMMUTABLE_ARTIFACTS
+  -> CERTIFY_ROLLOUT_AND_ROLLBACK
+  -> PRODUCTION_READY_REVIEW
 ```
-
-Rollback stops or replaces application artifacts, preserves committed data, and uses a forward corrective migration when required. It never automatically runs a destructive down migration.
 
 ## 11. Acceptance Criteria
 
-- **AC-001:** A clean supported Windows PowerShell or CI/Linux machine can run documented bootstrap commands and produce the complete BR-001 workspace with locked reproducible dependencies and buildable minimal web/API/worker applications.
-- **AC-002:** One root local workflow starts PostgreSQL/pgvector, Temporal/Web UI, MinIO, ClamAV, web, API, and registered workers without production credentials and reports named readiness.
-- **AC-003:** Pinned tools/images, lock verification, deterministic generation, and boundary rules make repeated bootstrap/build runs equivalent and reject dependency or generated-contract drift.
-- **AC-004:** Typed configuration validates required/optional/forbidden values before work, safe examples contain no secrets, environment differences remain external, and secret values rotate without source changes.
-- **AC-005:** Empty and supported-prior databases migrate successfully, pgvector readiness is verified, destructive/changed migrations fail, and rollback preserves data through compatible application rollback/forward correction.
-- **AC-006:** Shared persistence provides tenant-safe transactions, optimistic concurrency, idempotency, outbox, audit envelopes, UTC/stable-ID conventions, and parallel test isolation without feature-owned tables.
-- **AC-007:** Temporal client/worker foundations support versioned envelopes, queue ownership, baseline retries, heartbeat, cancellation, correlation/tracing, deterministic replay/testing, and at-least-once safety without registering a feature workflow.
-- **AC-008:** Custom authentication enforces tenant-slug-plus-normalized-email login, tenant-local email uniqueness, the specified Argon2id policy, Ed25519/EdDSA access tokens with `kid` and 15-minute maximum lifetime, bounded signing-key rotation, rotating/revocable refresh families with seven-day inactivity and 30-day absolute expiry, CSRF protection, scoped service identities, audited production provisioning, and deterministic identities only in local/test.
-- **AC-009:** RBAC/tenant policies deny unauthorized and cross-tenant access server-side without existence disclosure; feature permissions remain absent until feature implementation.
-- **AC-010:** Time-limited support grants are scoped, approved, expiring/revocable, auditable, default-deny, and cannot grant cross-tenant or secret access.
-- **AC-011:** MinIO and R2-compatible adapters satisfy the same versioned streaming/storage contract, private opaque-key, tenant-isolation, five-minute signed-access, lifecycle/legal-hold hook, health, and failure semantics.
-- **AC-012:** Shared JSON Schema, Zod, Pydantic, OpenAPI, fixtures, version metadata, generation/conformance, current-plus-previous-compatible-minor, and drift checks work without shared feature business logic.
-- **AC-013:** Correlation/causation and OpenTelemetry context propagate across HTTP, Temporal, database/outbox, storage, and provider-adapter test boundaries.
-- **AC-014:** Logs, metrics, traces, health/errors, audit envelopes, and CI output pass prohibited-content/secret/signed-URL/object-key redaction tests in Node and Python.
-- **AC-015:** Liveness/readiness and `health` distinguish service/dependency state, expose no sensitive data, and recover correctly after dependency restart.
-- **AC-016:** Jest, Testing Library, Playwright, Pytest, deterministic testkit, isolated dependencies, failure injection, coverage, and production-integration gating execute through documented commands.
-- **AC-017:** GitHub Actions enforces format, lint, type, contract drift, unit, integration, workflow, migration, security, secret/dependency/container scan, build, and smoke gates without exposing deployment secrets to untrusted pull requests.
-- **AC-018:** CI produces immutable content-addressed web/API/worker OCI images plus migration/contract artifacts tied to one commit and promotes the same validated artifacts with external configuration.
-- **AC-019:** Deployment ordering, health verification, incompatible-version rejection, and non-destructive rollback preserve data and contract meaning across supported prior state.
-- **AC-020:** `bootstrap`, `dev`, `stop`, `health`, `doctor`, migration, test, build, reset, and troubleshooting workflows are documented, non-interactive where required, and equivalent on supported Windows and CI/Linux.
-- **AC-021:** Reset commands cannot target development/production accidentally and require exact isolated-test target validation before deletion.
-- **AC-022:** On the NFR-001 reference profile, at least 19 of 20 cached local starts reach readiness within five minutes with reproducible evidence; `doctor` meets 30 seconds, `health` meets 10 seconds, and first-run downloads are reported separately.
-- **AC-023:** Database, Temporal, storage, configuration, migration, and startup failure injection produces explicit classification, safe partial-state handling, bounded recovery, and no silent loss/duplication.
-- **AC-024:** Security tests verify TLS/secure-cookie production policy, the minimum Argon2id parameters and hash upgrade, Ed25519 algorithm and `kid` enforcement, signing-key and refresh-family expiry/rotation/reuse detection/revocation, production provisioning authorization/audit/no-default-credential rules, least-privilege networks/identities, safe headers, dependency/container/secret scans, and privacy-safe diagnostics.
-- **AC-025:** Static and runtime boundary tests prove Foundation implements no DOCX validation/parsing/canonicalization/assets, AI calls/Question JSON/repair/cost enforcement, Exam workflow/Draft/Master/cap-request behavior, mixing, or publishing.
-- **AC-026:** Foundation satisfies the authentication/RBAC/tenant, PostgreSQL/Prisma migration, outbox/audit, Temporal, private object-storage, schema tooling, provider-secret/configuration, observability, local-parity, test, CI, and rollback dependencies referenced by the three existing feature specs.
-- **AC-027:** Foundation readiness reporting is machine-verifiable, content-safe, and identifies supported runtime/tools, dependency health, migration/contract state, tests, and artifact versions.
-- **AC-028:** A new provider, storage adapter, worker, or feature contract can be registered through the documented interface without changing unrelated engine or feature code.
+### 11.1 MVP Release Gate
+
+- **MVP-AC-001:** The pinned monorepo installs reproducibly and minimal web, API, TypeScript packages, and Python worker build or load through documented commands.
+- **MVP-AC-002:** The documented local workflow starts PostgreSQL/pgvector, Temporal/Web UI, MinIO, ClamAV, web, API, and registered workers without production credentials and reports safe named readiness.
+- **MVP-AC-003:** Typed configuration rejects missing, unknown, conflicting, forbidden, and insecure production values before work; examples and browser configuration expose no secret.
+- **MVP-AC-004:** Empty/current-supported migrations, pgvector readiness, migration ordering/checksum protection, destructive-cleanup rejection, and non-destructive rollback rules pass the MVP migration tests.
+- **MVP-AC-005:** Tenant transactions, optimistic concurrency, idempotency, outbox, audit envelopes, UTC/UUIDv7 conventions, and isolated reset safety pass without feature-owned tables.
+- **MVP-AC-006:** Temporal foundations prove queue ownership, versioned envelopes, bounded retry, heartbeat, cancellation, replay, duplicate delivery, restart recovery, and no feature workflow registration.
+- **MVP-AC-007:** Authentication and sessions prove tenant-local login, Argon2id policy/upgrade, Ed25519/EdDSA token enforcement, key selection, refresh rotation/reuse/expiry/revocation, CSRF/cookie safety, audited provisioning, and local-only deterministic identities.
+- **MVP-AC-008:** RBAC, tenant enforcement, service identities, and support grants deny unauthorized/cross-tenant/secret access without disclosure.
+- **MVP-AC-009:** MinIO and R2-compatible adapters satisfy private tenant-safe streaming, head/delete, signed-access expiry, lifecycle/legal-hold hook, health, and safe-error parity.
+- **MVP-AC-010:** JSON Schema `1.0`, generated/conformance-tested Zod and Pydantic, OpenAPI, metadata, and fixtures validate equivalently; writers emit and readers accept `1.0`; `1.1` and unsupported majors fail; drift blocks the gate.
+- **MVP-AC-011:** Correlation/causation/trace carriers and Node/Python redaction utilities preserve safe fields and remove prohibited content, secrets, signed URLs, private object keys, and credential-like values.
+- **MVP-AC-012:** Liveness/readiness distinguishes service/dependency state, exposes no sensitive data, and recovers after dependency return.
+- **MVP-AC-013:** Node, Jest/Testing Library coverage, Playwright smoke, Pytest, deterministic testkit, mandatory integration, Temporal, storage, authentication, migration-safety, security, and build commands pass; mandatory integration cannot silently skip.
+- **MVP-AC-014:** CI configuration enforces locked install, format, lint, typecheck, contract drift, unit, frontend, E2E, Python, integration, security, build, and artifact-metadata gates without exposing production deployment secrets to pull requests.
+- **MVP-AC-015:** Reset rejects every non-test or non-isolated target and never deletes development/production data.
+- **MVP-AC-016:** Static/runtime boundaries prove no DOCX, canonical, AI, Draft/Master Exam, cap-request, mixing, publishing, vector, or RAG behavior exists in Foundation.
+- **MVP-AC-017:** Consumer fixtures show that Exam Creation, DOCX Ingestion, and AI Processing can consume the declared shared authentication, tenancy, persistence, Temporal, storage, contract, configuration, observability, test, and rollback primitives.
+- **MVP-AC-018:** Safe machine-readable readiness identifies supported tools, dependencies, migrations, authoritative contract version, mandatory test commands, supported platforms, and artifact commit.
+
+### 11.2 Production Hardening
+
+Production Hardening criteria are non-blocking for MVP Foundation approval:
+
+- **PH-AC-001:** Every retained historical database snapshot and incompatible/partial/concurrent migration scenario passes production-like rollout and forward-correction tests.
+- **PH-AC-002:** Actual captured telemetry proves end-to-end trace propagation and prohibited-content redaction across HTTP, Temporal, database/outbox, storage, provider adapter, audits, health, and CI output.
+- **PH-AC-003:** Exhaustive failure injection across all shared dependencies proves bounded recovery, preserved committed state, no duplicate effect, and no leakage.
+- **PH-AC-004:** Clean hosted Windows and Linux runners execute the complete documented lifecycle and edge-case matrix.
+- **PH-AC-005:** A clean hosted commit produces scanned content-addressed images, SBOMs, provenance, migration/contract bundles, deployment verification, and unchanged promotion evidence.
+- **PH-AC-006:** Production-like partial rollout, health gating, rollback, forward correction, incompatible-version rejection, and deferred cleanup pass.
+- **PH-AC-007:** Release infrastructure satisfies the approved performance, restart, backup, recovery, and operational-readiness targets.
 
 ## 12. Error Cases
 
-- Missing/unsupported Node, pnpm, Python, uv, Docker, Compose, or required host capability.
-- Docker daemon unavailable; port collision; image pull failure; unhealthy PostgreSQL, Temporal, MinIO, or ClamAV.
-- Missing, malformed, forbidden, inconsistent, or secret-bearing configuration/example.
-- Lockfile mismatch, unpinned dependency/image, generated-contract drift, circular/boundary import, or non-reproducible build.
-- Database unavailable, pgvector missing, migration checksum/order conflict, partial migration, incompatible schema, unsafe rollback, or wrong test reset target.
-- Duplicate/stale idempotency record, outbox publish interruption, optimistic-concurrency conflict, or cross-tenant transaction.
-- Temporal unavailable, wrong namespace/queue, unauthorized worker, nondeterministic replay, heartbeat loss, cancellation failure, duplicate activity delivery, or retry-policy broadening.
-- Invalid tenant slug/login, cross-tenant identity collision, password-hash failure, weak/outdated hash, unsupported JWT algorithm, missing/unknown `kid`, expired access token, expired/reused/revoked refresh token, CSRF failure, wrong issuer/audience/scope, unauthorized provisioning, default production credential, compromised service credential, or session/key rotation race.
-- Unauthorized/cross-tenant action, missing/expired/revoked/overbroad support grant, or existence disclosure.
-- Object storage unavailable, wrong tenant/prefix, missing/corrupt object, expired/overbroad signed access, lifecycle/legal-hold hook failure, or MinIO/R2 contract divergence.
-- Missing trace/correlation context, telemetry exporter outage, sensitive marker leakage, unsafe error, or readiness response disclosure.
-- Test resource collision, live production dependency invocation, nondeterministic fake, coverage/gate bypass, or secret exposure in CI.
-- Artifact provenance mismatch, incompatible rollout, failed health verification, deployment configuration mismatch, or destructive rollback attempt.
-- Windows path/quoting/line-ending failure, WSL-only command, destructive reset ambiguity, or non-actionable bootstrap failure.
+### 12.1 MVP Release Gate
 
-Every failure returns a stable safe classification where programmatic handling applies, exits or transitions explicitly, preserves committed data, and identifies the supported recovery action.
+- Missing/incompatible tools, Docker/Compose unavailable, port collision, invalid configuration, or unhealthy dependency.
+- Missing pgvector, migration checksum/order violation, destructive migration, incompatible current schema, or migration lock failure.
+- Missing tenant, cross-tenant access, optimistic conflict, idempotency mismatch/concurrency, outbox acknowledgement failure, or unsafe audit metadata.
+- Wrong Temporal queue/identity/version, retry broadening, cancellation/replay failure, or duplicate delivery.
+- Invalid/locked identity, weak/outdated password hash, JWT algorithm/`kid`/issuer/audience/expiry failure, refresh reuse/expiry/revocation, CSRF/origin failure, unauthorized provisioning, or invalid support grant.
+- Missing/corrupt/private storage object, cross-tenant storage access, invalid signed access, interrupted stream, or unavailable adapter.
+- Contract drift, schema/runtime disagreement, unsupported `1.1` or major version, unknown field, or invalid fixture.
+- Secret/private-content leakage, unsafe health/error output, mandatory integration skip, unsafe reset, or feature-boundary violation.
+
+### 12.2 Production Hardening
+
+- Historical/partial migration incompatibility, telemetry traversal loss, exhaustive dependency fault, clean-runner divergence, artifact/provenance mismatch, scan failure, rollout failure, or operational-readiness failure.
+
+Every MVP error fails safely and preserves committed valid state.
 
 ## 13. Out of Scope
 
-- DOCX upload validation, malware policy ownership, parsing, canonicalization, Canonical Document models, canonical assets, or ingestion workflows.
-- AI provider invocation, prompts, Question JSON, grounding, repair, token/cost accounting, AI cap enforcement, or processing workflows.
-- Exam Creation workflow, metadata, Draft/Master models, editing, approval, preview, candidate comparison, or Admin cap-request lifecycle.
-- Question Bank, vector ingestion, embeddings, semantic retrieval, or RAG; pgvector availability alone is in scope.
-- Mixing algorithms, permutation/answer matrices, exam codes, publishing, templates, rendering, exports, or generated exam artifacts.
-- Production host, managed database vendor, DNS zone, domain, registry vendor, Sentry project, AI provider/model, or secrets-manager vendor selection.
-- Production deployment, customer migration, operational on-call process, billing, subscription, email delivery, password reset, MFA, SSO, invitation delivery, or identity-administration UI. The server-side identity provisioning boundary in BR-021A remains in scope.
-- Feature-specific retention, audit-event meanings, task queues, retry limits, business permissions, tables, APIs, screens, or tests.
+- Feature-owned DOCX, canonicalization, AI, exam lifecycle, mixing, publishing, vector/RAG, screens, tables, permissions, workflows, retry policies, retention, and tests.
+- Production vendor selection, deployment, customer migration, billing, email, password reset, MFA, SSO, invitations, and identity-administration UI.
+- Production Hardening completion as a prerequisite for MVP feature development.
 
 ## 14. Open Questions
 
-No question blocks implementation of the local/shared foundation.
+No question blocks MVP Foundation implementation or approval.
 
-External production decisions deferred to deployment planning:
-
-- Select the production hosting target and container registry.
-- Select the managed PostgreSQL/pgvector provider.
-- Confirm the R2 account/bucket, Cloudflare DNS/TLS bindings, production secrets manager, and telemetry/Sentry destinations.
-- Confirm production domains, allowed origins, certificate management, and service scaling.
-- Decide whether password reset, MFA, SSO, invitations, or transactional email require later feature specifications.
-
-These are external configuration or future product decisions and must be approved before production deployment, not before Foundation implementation.
+Production hosting, managed services, registry, domains/TLS, secrets manager, telemetry destinations, scaling, backup/recovery, and on-call decisions remain Production Hardening decisions required before production deployment.

@@ -1,0 +1,5 @@
+{
+  "schemaVersion": "1.0",
+  "consumers": ["exam-creation", "docx-ingestion", "ai-processing"],
+  "requiredContract": "urn:siromix:foundation:envelope:1.0"
+}

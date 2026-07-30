@@ -186,13 +186,27 @@ test("AC-011 storage contract is streaming, tenant-safe, private-keyed and signs
   );
 });
 
-test("AC-012/026/028 contracts are versioned, compatible and isolated", () => {
+test("MVP-AC-010/016/018 contracts are versioned, compatible and isolated", () => {
   assert.equal(
     json("packages/contracts/schemas/envelope-1.0.json").additionalProperties,
     false,
   );
   const contracts = read("packages/contracts/src/index.ts");
-  assert.match(contracts, /minor === 0 \|\| minor === 1/);
+  const generated = read("packages/contracts/generated/foundation-envelope.ts");
+  const openapi = json("packages/contracts/generated/openapi.json");
+  const consumers = json("packages/contracts/fixtures/consumers.json");
+  assert.match(contracts, /generated\/foundation-envelope/);
+  assert.match(generated, /version === "1\.0"/);
+  assert.doesNotMatch(generated, /version === "1\.1"/);
+  assert.equal(
+    openapi.components.schemas.FoundationEnvelope.$id,
+    "urn:siromix:foundation:envelope:1.0",
+  );
+  assert.deepEqual(consumers.consumers.sort(), [
+    "ai-processing",
+    "docx-ingestion",
+    "exam-creation",
+  ]);
   assert.doesNotMatch(
     contracts,
     /workflow|retry|retention|authorization|exam|docx|question|provider/i,
@@ -323,6 +337,8 @@ test("AC-002/020 unified lifecycle owns applications, migrations, and workers", 
     "@siromix/api",
     "siromix_worker.main",
     "STARTUP_READINESS_TIMEOUT",
+    "STALE_APPLICATION_STATE_RECOVERED",
+    "process.kill(pid, 0)",
   ]) {
     assert.ok(script.includes(marker), marker);
   }

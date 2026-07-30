@@ -25,6 +25,20 @@ export default [
     },
   },
   {
+    files: ["**/*.cjs"],
+    languageOptions: {
+      globals: {
+        module: "readonly",
+        require: "readonly",
+        test: "readonly",
+        expect: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  {
     files: ["apps/web/next-env.d.ts"],
     rules: {
       "@typescript-eslint/triple-slash-reference": "off",
