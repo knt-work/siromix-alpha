@@ -225,6 +225,7 @@ test("AC-016 deterministic testkit provides clock, UUIDv7 and isolated resource 
 test("AC-017/018/019 CI and deployment contracts enforce gates and provenance", () => {
   const ci = read(".github/workflows/ci.yml");
   const docs = read("docs/development.md");
+  const artifacts = read("scripts/artifacts.mjs");
   for (const gate of [
     "frozen-lockfile",
     "format",
@@ -256,6 +257,10 @@ test("AC-017/018/019 CI and deployment contracts enforce gates and provenance", 
   assert.match(docs, /never automatically run destructive down migrations/i);
   assert.match(docs, /name:tag@sha256/);
   assert.match(docs, /traffic enabled only after all checks pass/i);
+  assert.match(artifacts, /--provenance=false/);
+  assert.match(artifacts, /type=oci,dest=/);
+  assert.match(artifacts, /docker\.tar/);
+  assert.match(artifacts, /archiveFormat: "oci"/);
 });
 
 test("AC-021 reset rejects anything except an exact isolated test target", () => {

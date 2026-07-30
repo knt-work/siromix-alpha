@@ -114,15 +114,9 @@ console.log(
 function buildAndInspectImage(name, dockerfile) {
   const tag = `siromix-${name}:sha-${shortCommit}`;
   const metadataPath = resolve(output, "buildkit", `${name}.json`);
-  exec("docker", [
-    "buildx",
-    "build",
-    "--load",
-    "--pull",
-    "--provenance=mode=max",
-    "--sbom=true",
-    "--metadata-file",
-    metadataPath,
+  const archivePath = resolve(output, "images", `${name}.oci.tar`);
+  const scanArchivePath = resolve(output, "images", `${name}.docker.tar`);
+  const commonArguments = [
     "--build-arg",
     `SOURCE_COMMIT=${commit}`,
     "--label",
@@ -134,13 +128,38 @@ function buildAndInspectImage(name, dockerfile) {
     "--file",
     dockerfile,
     ".",
+  ];
+  // The classic Docker image store cannot load the attestation manifest list.
+  // Load a runnable platform image for smoke/scan and export the same cached
+  // build as an attested OCI archive for immutable promotion.
+  exec("docker", ["image", "rm", "--force", tag], { allowFailure: true });
+  exec("docker", [
+    "buildx",
+    "build",
+    "--load",
+    "--pull",
+    "--provenance=false",
+    "--sbom=false",
+    ...commonArguments,
+  ]);
+  exec("docker", [
+    "buildx",
+    "build",
+    "--provenance=mode=max",
+    "--sbom=true",
+    "--metadata-file",
+    metadataPath,
+    "--output",
+    `type=oci,dest=${archivePath}`,
+    ...commonArguments,
   ]);
   const buildMetadata = JSON.parse(readFileSync(metadataPath, "utf8"));
   const inspect = JSON.parse(exec("docker", ["image", "inspect", tag]))[0];
   const digest =
     buildMetadata["containerimage.digest"] ??
-    inspect.RepoDigests?.[0]?.split("@")[1] ??
-    inspect.Id;
+    (() => {
+      throw new Error("ATTESTED_OCI_DIGEST_MISSING");
+    })();
   const reference = `${tag}@${digest}`;
   const sbomPath = resolve(output, "sbom", `${name}.cdx.json`);
   exec("docker", [
@@ -152,8 +171,7 @@ function buildAndInspectImage(name, dockerfile) {
     "--output",
     sbomPath,
   ]);
-  const archivePath = resolve(output, "images", `${name}.tar`);
-  exec("docker", ["save", "--output", archivePath, tag]);
+  exec("docker", ["image", "save", "--output", scanArchivePath, tag]);
   const scanPath = resolve(output, "scans", `${name}.sarif.json`);
   exec("docker", [
     "run",
@@ -174,7 +192,7 @@ function buildAndInspectImage(name, dockerfile) {
     "--output",
     `/work/scans/${name}.sarif.json`,
     "--input",
-    `/work/images/${name}.tar`,
+    `/work/images/${name}.docker.tar`,
   ]);
   enforceSarif(scanPath, "CONTAINER_SCAN_FAILED");
   return {
@@ -186,6 +204,7 @@ function buildAndInspectImage(name, dockerfile) {
     sbom: relative(root, sbomPath).replaceAll("\\", "/"),
     scan: relative(root, scanPath).replaceAll("\\", "/"),
     archive: relative(root, archivePath).replaceAll("\\", "/"),
+    archiveFormat: "oci",
   };
 }
 
