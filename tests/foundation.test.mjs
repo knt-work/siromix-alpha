@@ -69,6 +69,13 @@ test("AC-001/003/020 workspace, pins, commands, and generated drift", () => {
   ]);
 });
 
+test("AC-003/020 Git checkout preserves deterministic cross-platform line endings", () => {
+  const attributes = read(".gitattributes");
+  assert.match(attributes, /^\* text=auto eol=lf$/m);
+  assert.match(attributes, /^\*\.bat text eol=crlf$/m);
+  assert.match(attributes, /^\*\.cmd text eol=crlf$/m);
+});
+
 test("AC-002/015 local topology and safe named health exist", () => {
   const compose = read("infra/docker/compose.yaml");
   for (const service of [
