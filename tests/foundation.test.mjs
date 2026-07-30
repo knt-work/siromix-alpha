@@ -86,6 +86,10 @@ test("AC-002/015 local topology and safe named health exist", () => {
     "clamav:",
   ])
     assert.match(compose, new RegExp(service));
+  assert.match(
+    compose,
+    /temporal:[\s\S]*BIND_ON_IP: 0\.0\.0\.0[\s\S]*TEMPORAL_ADDRESS: temporal:7233[\s\S]*timeout: 10s[\s\S]*retries: 36[\s\S]*start_period: 60s/,
+  );
   assert.match(read("apps/api/src/main.ts"), /live[\s\S]*ready/);
   assert.doesNotMatch(read("apps/api/src/main.ts"), /password|secret|token/i);
 });

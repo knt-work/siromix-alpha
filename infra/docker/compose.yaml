@@ -24,6 +24,8 @@ services:
       POSTGRES_USER: siromix_app
       POSTGRES_PWD: local-only-password
       POSTGRES_SEEDS: postgres
+      BIND_ON_IP: 0.0.0.0
+      TEMPORAL_ADDRESS: temporal:7233
     depends_on: { postgres: { condition: service_healthy } }
     ports: ["127.0.0.1:7233:7233"]
     healthcheck:
@@ -39,8 +41,9 @@ services:
             "health",
           ],
         interval: 5s,
-        timeout: 3s,
-        retries: 30,
+        timeout: 10s,
+        retries: 36,
+        start_period: 60s,
       }
     networks: [data, workflow]
   temporal-ui:
