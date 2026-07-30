@@ -1,0 +1,104 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with: { version: "10.15.1", run_install: false }
+      - uses: actions/setup-node@v5
+        with: { node-version: "24.7.0", cache: pnpm }
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.8.14", python-version: "3.12.11" }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: uv sync --frozen --project workers/document-ai
+      - run: pnpm format
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm contracts:check
+      - run: pnpm test
+      - run: pnpm test:frontend
+      - run: pnpm exec playwright install --with-deps chromium
+        if: runner.os == 'Linux'
+      - run: pnpm test:e2e
+        if: runner.os == 'Linux'
+      - run: uv run --frozen --project workers/document-ai python -m pytest workers/document-ai/tests
+      - run: pnpm build
+      - run: pnpm audit --audit-level high
+      - run: pnpm security:scan
+      - run: pnpm artifacts:metadata
+      - run: git diff --exit-code
+  integration:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with: { version: "10.15.1", run_install: false }
+      - uses: actions/setup-node@v5
+        with: { node-version: "24.7.0", cache: pnpm }
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.8.14", python-version: "3.12.11" }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: uv sync --frozen --project workers/document-ai
+      - run: docker compose -f infra/docker/compose.yaml up -d --wait
+      - run: pnpm db:migrate
+        env:
+          DATABASE_URL: postgresql://siromix_app:local-only-password@127.0.0.1:5432/siromix?schema=public
+      - run: pnpm test:integration
+        env:
+          SIROMIX_ENV: test
+          SIROMIX_INTEGRATION: "1"
+      - if: always()
+        run: docker compose -f infra/docker/compose.yaml logs --no-color
+  artifacts:
+    runs-on: ubuntu-latest
+    needs: [verify, integration]
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with: { version: "10.15.1", run_install: false }
+      - uses: actions/setup-node@v5
+        with: { node-version: "24.7.0", cache: pnpm }
+      - uses: docker/setup-buildx-action@v3
+      - run: pnpm install --frozen-lockfile
+      - run: docker compose -f infra/docker/compose.yaml up -d --wait
+      - run: pnpm artifacts
+      - run: pnpm deployment:verify
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          CONFIG_VERSION: "1"
+          REQUIRED_CONFIG_VERSION: "1"
+          MIGRATION_COMPATIBILITY_VERSION: "1"
+          CONTRACT_VERSION: "1.0"
+          TEMPORAL_TYPESCRIPT_TASK_QUEUE: foundation.typescript.v1
+          TEMPORAL_PYTHON_TASK_QUEUE: foundation.python.v1
+      - uses: actions/attest@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          subject-path: |
+            artifacts/bundles/*.bundle.json
+            artifacts/provenance.intoto.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: platform-foundation-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+      - if: always()
+        run: docker compose -f infra/docker/compose.yaml down

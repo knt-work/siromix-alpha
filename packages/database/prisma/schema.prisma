@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RecordStatus {
+  ACTIVE
+  DISABLED
+  REVOKED
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum OutboxStatus {
+  PENDING
+  CLAIMED
+  PUBLISHED
+}
+
+model Tenant {
+  id String @id @db.Uuid
+  slug String @unique
+  displayName String
+  status RecordStatus @default(ACTIVE)
+  version Int @default(1)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  memberships TenantMembership[]
+  identities UserIdentity[]
+}
+model UserIdentity {
+  id String @id @db.Uuid
+  tenantId String @db.Uuid
+  normalizedEmail String
+  passwordHash String
+  status RecordStatus @default(ACTIVE)
+  lastAuthenticatedAt DateTime? @db.Timestamptz
+  passwordChangedAt DateTime @default(now()) @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  memberships TenantMembership[]
+  refreshSessions RefreshSession[]
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@unique([tenantId, normalizedEmail])
+  @@index([tenantId])
+}
+model TenantMembership {
+  id String @id @db.Uuid
+  tenantId String @db.Uuid
+  userId String @db.Uuid
+  roles String[]
+  status RecordStatus @default(ACTIVE)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user UserIdentity @relation(fields: [userId], references: [id])
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+}
+model RefreshSession {
+  id String @id @db.Uuid
+  tenantId String @db.Uuid
+  userId String @db.Uuid
+  familyHash String
+  tokenHash String @unique
+  clientContext Json?
+  expiresAt DateTime @db.Timestamptz
+  absoluteExpiresAt DateTime @db.Timestamptz
+  revokedAt DateTime? @db.Timestamptz
+  rotatedAt DateTime? @db.Timestamptz
+  reusedAt DateTime? @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  user UserIdentity @relation(fields: [userId], references: [id])
+  @@index([tenantId, userId])
+  @@index([familyHash])
+}
+model ServiceIdentity {
+  id String @id @db.Uuid
+  environment String
+  audience String
+  issuer String
+  scopes String[]
+  credentialHash String
+  credentialVersion Int
+  status RecordStatus @default(ACTIVE)
+  expiresAt DateTime @db.Timestamptz
+  revokedAt DateTime? @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  @@unique([environment, audience, id])
+}
+model SupportGrant {
+  id String @id @db.Uuid
+  tenantId String @db.Uuid
+  supportActorId String @db.Uuid
+  approverId String @db.Uuid
+  resources String[]
+  actions String[]
+  reason String
+  startsAt DateTime @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz
+  revokedAt DateTime? @db.Timestamptz
+  auditRefs Json
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  @@index([tenantId, supportActorId])
+}
+model IdempotencyRecord {
+  id String @id @db.Uuid
+  tenantId String? @db.Uuid
+  operation String
+  key String
+  requestHash String
+  status IdempotencyStatus
+  responseRef String?
+  expiresAt DateTime @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  @@unique([tenantId, operation, key])
+}
+model OutboxEnvelope {
+  id String @id @db.Uuid
+  tenantId String? @db.Uuid
+  owner String
+  eventType String
+  schemaVersion String
+  payloadRef String?
+  correlationId String @db.Uuid
+  causationId String @db.Uuid
+  status OutboxStatus @default(PENDING)
+  attempts Int @default(0)
+  availableAt DateTime @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@index([status, availableAt])
+}
+model AuditEnvelope {
+  id String @id @db.Uuid
+  tenantId String? @db.Uuid
+  actorId String
+  eventType String
+  targetRefs Json
+  safeMetadata Json
+  correlationId String @db.Uuid
+  causationId String @db.Uuid
+  occurredAt DateTime @db.Timestamptz
+  @@index([tenantId, occurredAt])
+}
+model MigrationMetadata {
+  id String @id
+  checksum String
+  commitSha String
+  compatibilityVersion String
+  appliedAt DateTime @default(now()) @db.Timestamptz
+}

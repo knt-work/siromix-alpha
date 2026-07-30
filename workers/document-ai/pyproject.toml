@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "siromix-document-ai-worker"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pydantic==2.11.7",
+  "structlog==25.4.0",
+  "temporalio==1.17.0",
+  "opentelemetry-api==1.36.0"
+]
+[dependency-groups]
+dev = ["pytest==8.4.1", "ruff==0.12.11", "mypy==1.17.1"]
+[tool.uv]
+required-version = "==0.8.*"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/siromix_worker"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0",
+  "id": "019b76da-a800-7000-8000-000000000000",
+  "correlationId": "019b76da-a800-7000-8000-000000000001",
+  "causationId": "019b76da-a800-7000-8000-000000000002",
+  "occurredAt": "2026-01-01T00:00:00Z",
+  "payloadType": "foundation.smoke",
+  "payloadVersion": "1.0"
+}

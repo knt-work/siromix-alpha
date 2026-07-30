@@ -1,0 +1,12 @@
+{
+  "source": "urn:siromix:foundation:envelope:1.0",
+  "schemaVersion": "1.0",
+  "supportedReaderVersions": [
+    "1.0"
+  ],
+  "generated": [
+    "foundation-envelope.ts",
+    "foundation_envelope.py",
+    "openapi.json"
+  ]
+}
