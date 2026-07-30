@@ -266,6 +266,11 @@ test("AC-017/018/019 CI and deployment contracts enforce gates and provenance", 
   assert.match(artifacts, /docker\.tar/);
   assert.match(artifacts, /"cyclonedx"/);
   assert.doesNotMatch(artifacts, /"scout"/);
+  assert.match(
+    artifacts,
+    /"siromix_workflow"[\s\S]*"TEMPORAL_ADDRESS=temporal:7233"/,
+  );
+  assert.doesNotMatch(artifacts, /host\.docker\.internal:7233/);
   assert.match(artifacts, /archiveFormat: "oci"/);
 });
 

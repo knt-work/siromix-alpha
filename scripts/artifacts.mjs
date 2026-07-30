@@ -230,10 +230,12 @@ function verifyImageHealth(image) {
   const args = ["run", "--detach", "--rm", "--name", name];
   if (image.name === "document-ai-worker") {
     args.push(
+      "--network",
+      "siromix_workflow",
       "--env",
       "SIROMIX_ENV=local",
       "--env",
-      "TEMPORAL_ADDRESS=host.docker.internal:7233",
+      "TEMPORAL_ADDRESS=temporal:7233",
     );
   }
   args.push(image.tag);
