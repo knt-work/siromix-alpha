@@ -240,6 +240,10 @@ test("AC-017/018/019 CI and deployment contracts enforce gates and provenance", 
     "pnpm must be installed before setup-node resolves the pnpm cache",
   );
   assert.doesNotMatch(ci, /actions\/(?:checkout|setup-node)@v4/);
+  assert.ok(
+    ci.indexOf("pnpm db:generate") < ci.indexOf("pnpm typecheck"),
+    "Prisma Client must be generated before clean-runner typechecking",
+  );
   assert.match(docs, /expand migrations/);
   assert.match(docs, /forward corrective migration/);
   assert.match(docs, /never automatically run destructive down migrations/i);

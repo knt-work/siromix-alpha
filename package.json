@@ -25,6 +25,7 @@
     "stop": "node scripts/foundation.mjs stop",
     "health": "node scripts/foundation.mjs health",
     "doctor": "node scripts/foundation.mjs doctor",
+    "db:generate": "pnpm --filter @siromix/database prisma:generate",
     "db:migrate": "pnpm --filter @siromix/database prisma:migrate",
     "db:validate": "pnpm --filter @siromix/database prisma:validate",
     "test": "tsx --test tests/*.test.mjs tests/*.test.ts",
