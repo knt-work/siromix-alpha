@@ -1,6 +1,8 @@
 import { NativeConnection, Runtime, Worker } from "@temporalio/worker";
 import { WorkflowIdReusePolicy } from "@temporalio/common";
+import { spawn, type ChildProcess } from "node:child_process";
 import assert from "node:assert/strict";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import * as activities from "../../packages/workflow/src/activities.ts";
@@ -33,6 +35,51 @@ const envelope = (id: string) => ({
   occurredAt: new Date().toISOString(),
   deadlineAt: new Date(Date.now() + 60_000).toISOString(),
 });
+
+async function startPythonWorker(port: number) {
+  const root = fileURLToPath(new URL("../../", import.meta.url));
+  const python =
+    process.platform === "win32"
+      ? resolve(root, "workers/document-ai/.venv/Scripts/python.exe")
+      : resolve(root, "workers/document-ai/.venv/bin/python");
+  const child = spawn(python, ["-m", "siromix_worker.main"], {
+    cwd: root,
+    env: {
+      ...process.env,
+      SIROMIX_ENV: "local",
+      TEMPORAL_ADDRESS: "127.0.0.1:7233",
+      WORKER_HEALTH_PORT: String(port),
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let diagnostics = "";
+  for (const stream of [child.stdout, child.stderr])
+    stream?.on("data", (chunk) => {
+      diagnostics = `${diagnostics}${String(chunk)}`.slice(-4_000);
+    });
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    if (child.exitCode !== null)
+      throw new Error(
+        `PYTHON_TEMPORAL_WORKER_EXITED: ${child.exitCode}; ${diagnostics}`,
+      );
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/ready`);
+      if (response.ok) return { child, diagnostics: () => diagnostics };
+    } catch {
+      // The worker has not registered and opened its health endpoint yet.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  stopChild(child);
+  throw new Error(`PYTHON_TEMPORAL_WORKER_NOT_READY: ${diagnostics}`);
+}
+
+function stopChild(child: ChildProcess | undefined) {
+  if (!child || child.exitCode !== null) return;
+  child.kill("SIGTERM");
+  const timer = setTimeout(() => child.kill("SIGKILL"), 5_000);
+  timer.unref();
+}
 
 test(
   "AC-007 real Temporal workers, retries, heartbeat, cancellation, replay, duplicate delivery, and restart",
@@ -69,7 +116,24 @@ test(
     const workerConnection = await NativeConnection.connect({
       address: "127.0.0.1:7233",
     });
+    const workers = new Set<Worker>();
+    const workerRuns = new Set<Promise<unknown>>();
+    let pythonWorker: ChildProcess | undefined;
     try {
+      const primaryWorker = await Worker.create({
+        connection: workerConnection,
+        taskQueue: queue,
+        identity: "foundation-ts-worker",
+        workflowsPath,
+        activities,
+      });
+      workers.add(primaryWorker);
+      workerRuns.add(primaryWorker.run());
+      const pythonRegistration = await startPythonWorker(
+        31_000 + Math.floor(Math.random() * 1_000),
+      );
+      pythonWorker = pythonRegistration.child;
+
       const smokeId = unique();
       const smoke = await client.workflow.execute(foundationSmokeWorkflow, {
         taskQueue: queue,
@@ -178,7 +242,9 @@ test(
         workflowsPath,
         activities,
       });
+      workers.add(workerOne);
       const workerOneRun = workerOne.run();
+      workerRuns.add(workerOneRun);
       const restartHandle = await client.workflow.start(
         foundationRestartWorkflow,
         {
@@ -190,6 +256,8 @@ test(
       await new Promise((resolve) => setTimeout(resolve, 200));
       workerOne.shutdown();
       await workerOneRun;
+      workers.delete(workerOne);
+      workerRuns.delete(workerOneRun);
       const workerTwo = await Worker.create({
         connection: workerConnection,
         taskQueue: restartQueue,
@@ -197,9 +265,16 @@ test(
         workflowsPath,
         activities,
       });
+      workers.add(workerTwo);
       const restarted = workerTwo.runUntil(restartHandle.result());
+      workerRuns.add(restarted);
       assert.equal((await restarted).runtime, "typescript");
+      workers.delete(workerTwo);
+      workerRuns.delete(restarted);
     } finally {
+      for (const worker of workers) worker.shutdown();
+      stopChild(pythonWorker);
+      await Promise.allSettled(workerRuns);
       await workerConnection.close();
       await connection.close();
       await Runtime.instance().shutdown();

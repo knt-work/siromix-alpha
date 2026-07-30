@@ -43,8 +43,11 @@ jobs:
         with: { version: "10.15.1", run_install: false }
       - uses: actions/setup-node@v5
         with: { node-version: "24.7.0", cache: pnpm }
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.8.14", python-version: "3.12.11" }
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
+      - run: uv sync --frozen --project workers/document-ai
       - run: docker compose -f infra/docker/compose.yaml up -d --wait
       - run: pnpm db:migrate
         env:
