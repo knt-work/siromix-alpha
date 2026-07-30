@@ -264,6 +264,8 @@ test("AC-017/018/019 CI and deployment contracts enforce gates and provenance", 
   assert.match(artifacts, /--provenance=false/);
   assert.match(artifacts, /type=oci,dest=/);
   assert.match(artifacts, /docker\.tar/);
+  assert.match(artifacts, /"cyclonedx"/);
+  assert.doesNotMatch(artifacts, /"scout"/);
   assert.match(artifacts, /archiveFormat: "oci"/);
 });
 

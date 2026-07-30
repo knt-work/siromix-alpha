@@ -162,16 +162,23 @@ function buildAndInspectImage(name, dockerfile) {
     })();
   const reference = `${tag}@${digest}`;
   const sbomPath = resolve(output, "sbom", `${name}.cdx.json`);
+  exec("docker", ["image", "save", "--output", scanArchivePath, tag]);
   exec("docker", [
-    "scout",
-    "sbom",
-    `local://${tag}`,
+    "run",
+    "--rm",
+    "--volume",
+    `${output}:/work:rw`,
+    "--volume",
+    "siromix-trivy-cache:/root/.cache/",
+    scanner.reference,
+    "image",
     "--format",
     "cyclonedx",
     "--output",
-    sbomPath,
+    `/work/sbom/${name}.cdx.json`,
+    "--input",
+    `/work/images/${name}.docker.tar`,
   ]);
-  exec("docker", ["image", "save", "--output", scanArchivePath, tag]);
   const scanPath = resolve(output, "scans", `${name}.sarif.json`);
   exec("docker", [
     "run",
