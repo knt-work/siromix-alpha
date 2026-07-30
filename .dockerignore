@@ -1,0 +1,13 @@
+.git
+.github
+.env
+.next
+.venv
+artifacts
+node_modules
+**/.next
+**/.venv
+**/dist
+**/node_modules
+coverage
+test-results

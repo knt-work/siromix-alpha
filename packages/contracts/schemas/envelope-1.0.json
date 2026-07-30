@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:siromix:foundation:envelope:1.0",
+  "title": "FoundationEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "correlationId",
+    "causationId",
+    "occurredAt",
+    "payloadType",
+    "payloadVersion"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "id": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "actorId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": { "type": "string", "format": "uuid" },
+    "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "payloadType": { "type": "string", "pattern": "^[a-z][a-z0-9.-]+$" },
+    "payloadVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "traceparent": { "type": "string", "maxLength": 128 }
+  }
+}

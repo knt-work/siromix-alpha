@@ -1,0 +1,9 @@
+pnpm-lock.yaml
+uv.lock
+packages/contracts/generated/
+specs/
+.agents/
+.mypy_cache/
+AGENTS.md
+README.md
+workers/document-ai/uv.lock
