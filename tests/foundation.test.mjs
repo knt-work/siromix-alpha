@@ -234,6 +234,12 @@ test("AC-017/018/019 CI and deployment contracts enforce gates and provenance", 
   ])
     assert.ok(ci.includes(gate), gate);
   assert.match(ci, /permissions:\s*\n\s*contents: read/);
+  assert.match(ci, /fail-fast: false/);
+  assert.ok(
+    ci.indexOf("pnpm/action-setup@v4") < ci.indexOf("actions/setup-node@v5"),
+    "pnpm must be installed before setup-node resolves the pnpm cache",
+  );
+  assert.doesNotMatch(ci, /actions\/(?:checkout|setup-node)@v4/);
   assert.match(docs, /expand migrations/);
   assert.match(docs, /forward corrective migration/);
   assert.match(docs, /never automatically run destructive down migrations/i);
