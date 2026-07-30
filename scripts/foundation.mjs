@@ -24,15 +24,20 @@ const pnpmArguments = (args) =>
     ? ["/d", "/s", "/c", "corepack", "pnpm", ...args]
     : ["pnpm", ...args];
 const expected = { node: 24, pnpm: 10, python: [3, 12], uv: [0, 8] };
-const run = (file, args) =>
+const VERSION_PROBE_TIMEOUT_MS = 3_000;
+const run = (file, args, options = {}) =>
   execFileSync(file, args, {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    ...options,
   }).trim();
 const version = (file, args = ["--version"]) => {
   try {
-    return { ok: true, value: run(file, args) };
+    return {
+      ok: true,
+      value: run(file, args, { timeout: VERSION_PROBE_TIMEOUT_MS }),
+    };
   } catch (error) {
     return {
       ok: false,

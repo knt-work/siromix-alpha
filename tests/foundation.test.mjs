@@ -291,6 +291,7 @@ test("AC-022/027 doctor and readiness are bounded and machine-readable", () => {
   assert.equal(JSON.parse(result.stdout).schemaVersion, "1.0");
   const script = read("scripts/foundation.mjs");
   for (const marker of [
+    "VERSION_PROBE_TIMEOUT_MS",
     "generatedAt",
     "dependencies",
     "migration",
