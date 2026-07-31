@@ -130,7 +130,25 @@ Use the following Codex-native invocations:
 | Nova | Software Engineer | `$nova` or `/skills` → `nova` |
 | Pulsar | Review Agent | `$pulsar` or `/skills` → `pulsar` |
 
-An invocation selects exactly one role for the current task. The selected agent must follow this file, `/specs/constitution.md`, and its own `SKILL.md`.
+An invocation selects exactly one active role at a time. The selected agent must follow this file, `/specs/constitution.md`, and its own `SKILL.md`. The automatic review loop below may hand work to the next named role, but each role keeps its boundaries.
+
+### Automatic Review and Correction Loop
+
+Use this loop for every Nova assignment, whether it contains one implementation task or a batch:
+
+1. Nova completes the assigned scope, runs relevant validation, and automatically invokes Pulsar.
+2. Pulsar reviews the completed scope, writes or updates `review.md`, and automatically invokes Vega with the outcome and evidence.
+3. Vega diagnoses what happened and classifies each finding:
+   - Specification gaps or conflicts belong to Orion.
+   - Implementation defects or missing tests for existing criteria belong to Nova.
+   - Product decisions or unresolved blockers return to the user.
+4. If Pulsar approved the work, Vega confirms that no correction is required and the loop ends.
+5. Before invoking Orion or Nova, Vega must show the user the proposed target, exact scope, supporting findings, and expected outcome, then request explicit approval.
+6. Vega must not invoke Orion or Nova until that approval is received. Approval is scoped to the proposed handoff and cannot be inferred from the original request, previous approvals, silence, or a general instruction to continue.
+7. If Orion updates the spec, Orion returns control to Vega. Vega reassesses the result and requests a separate approval before invoking Nova.
+8. If Nova makes approved corrections, Nova automatically invokes Pulsar again and the loop repeats until `Approved` or the user stops it.
+
+Pulsar-to-Vega and Nova-to-Pulsar handoffs are automatic and do not require approval. Every Orion or Nova invocation initiated by Vega requires user approval.
 
 > Codex does not currently support repository-defined commands with arbitrary root names such as `/orion`. Repository-scoped Skills are the supported shared mechanism; use `$orion` or select it through `/skills`.
 
@@ -924,10 +942,12 @@ Every feature must follow this flow:
 9. Nova implements the feature.
 10. Nova creates automated tests.
 11. Nova verifies acceptance criteria locally.
-12. Pulsar validates functional, technical, and UX adherence to the specification.
-13. Pulsar writes or updates `review.md`.
-14. Corrections are made if necessary.
-15. The feature is complete only after Pulsar approval.
+12. Nova automatically invokes Pulsar after completing one task or a batch of tasks.
+13. Pulsar validates functional, technical, and UX adherence to the specification.
+14. Pulsar writes or updates `review.md` and automatically invokes Vega.
+15. Vega diagnoses the review. If corrections are needed, Vega requests explicit user approval before invoking Orion or Nova.
+16. Approved corrections are made and returned through the review loop.
+17. The feature is complete only after Pulsar approval and Vega confirms no corrective handoff is required.
 
 ---
 

@@ -12,7 +12,7 @@
 | MVP-PF-004 | Authentication, sessions, RBAC, and service identities | Backend | P0 | Completed |
 | MVP-PF-005 | Private object-storage adapters | Backend / Worker | P0 | Completed |
 | MVP-PF-006 | Authoritative contracts, configuration, and observability | Engineering | P0 | Correction required: contract readers must reject `1.1` |
-| MVP-PF-007 | Deterministic tests, CI gates, and feature boundaries | Engineering / DevOps | P0 | Completed |
+| MVP-PF-007 | Deterministic tests, CI gates, and feature boundaries | Engineering / DevOps | P0 | Correction required: boundary checks must be owner-scoped |
 | MVP-PF-008 | MVP documentation and evidence reconciliation | Engineering | P0 | In progress |
 
 ### Production Hardening
@@ -33,7 +33,7 @@
 
 - **MVP-IMP-001:** Maintain the pinned pnpm workspace and minimal Next.js, NestJS, Python worker, and shared-package entry points.
 - **MVP-IMP-002:** Maintain cross-platform bootstrap/dev/stop/health/doctor/migration/test/build/readiness/reset commands and safe diagnostics.
-- **MVP-IMP-003:** Maintain static/runtime boundaries that prohibit feature business behavior.
+- **MVP-IMP-003:** Maintain static/runtime boundaries that prohibit feature contracts, behavior, imports, re-exports, and registrations inside Foundation-owned modules; permit approved feature implementation only in declared owner packages/modules; reject unowned artifacts and unauthorized cross-owner dependencies.
 - **MVP-IMP-004:** Correct generated TypeScript/Python readers and compatibility metadata so only authoritative Foundation Envelope `1.0` is accepted.
 
 ### Production Hardening
@@ -109,6 +109,7 @@
 - **MVP-CO-002:** Reject `1.1` and unsupported majors until an authoritative compatible schema exists.
 - **MVP-CO-003:** Maintain typed configuration, safe examples, forbidden-variable checks, and operational configuration version.
 - **MVP-CO-004:** Maintain correlation carriers, Node/Python structured logging/redaction utilities, safe errors, and audit envelopes.
+- **MVP-CO-005:** Keep `@siromix/contracts` Foundation-envelope-only and prevent it from importing or re-exporting feature contracts. Recognize the workspace package `@siromix/docx-ingestion-contracts` at `packages/docx-ingestion-contracts` as the DOCX Ingestion contract owner without making Foundation responsible for its schema or compatibility policy.
 
 ### Production Hardening
 
@@ -135,7 +136,7 @@
 - **MVP-TEST-001:** Implement every test mapped to MVP-AC-001 through MVP-AC-018.
 - **MVP-TEST-002:** Run Node/Foundation, Jest/Testing Library, Playwright, Pytest, mandatory Docker integration, format, lint, typecheck, contract drift, security scan, and build.
 - **MVP-TEST-003:** Fail mandatory integration when its explicit test profile is absent.
-- **MVP-TEST-004:** Verify no feature-owned table, route, workflow, queue, contract, storage behavior, or business rule exists.
+- **MVP-TEST-004:** Verify no feature-owned table, route, workflow, queue, contract, storage behavior, import, re-export, registration, or business rule exists inside Foundation-owned modules. Verify approved feature artifacts are allowed only in their declared owner packages/modules and reject unowned artifacts or unauthorized cross-owner dependencies.
 
 ### Production Hardening
 
@@ -158,6 +159,8 @@ No neighboring feature depends on exhaustive production certification to begin i
 
 All DOCX, canonicalization, AI, Draft/Master Exam, mixing, publishing, vector/RAG, feature permission, UI, workflow, retention, retry, and business-rule work remains feature-owned.
 
+DOCX Ingestion contract artifacts are owned by the workspace package `@siromix/docx-ingestion-contracts` at `packages/docx-ingestion-contracts`, not by Foundation's `@siromix/contracts`. The authoritative DOCX JSON Schema, compatibility metadata, TypeScript readers, and fixtures live in that feature package. Any generated Python worker binding must remain traceable to and conformance-tested against the feature-owned schema.
+
 ## Completion Checklist
 
 ### MVP Foundation Approved
@@ -166,6 +169,7 @@ All DOCX, canonicalization, AI, Draft/Master Exam, mixing, publishing, vector/RA
 - [x] MVP and Production Hardening scopes separated.
 - [x] MVP-AC-001 through MVP-AC-018 map to mandatory tests.
 - [ ] Foundation Envelope runtime readers reject `1.1` and conform to authoritative schema `1.0`.
+- [ ] Owner-scoped boundary tests permit approved feature packages while rejecting feature artifacts in Foundation-owned modules.
 - [ ] All MVP mandatory tests pass after the contract correction.
 - [ ] Pulsar status is `Approved` for **MVP Foundation**.
 

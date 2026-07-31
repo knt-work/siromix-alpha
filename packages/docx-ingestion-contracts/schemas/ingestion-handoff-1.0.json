@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:siromix:docx-ingestion:ingestion-handoff:1.0",
+  "title": "IngestionHandoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "handoffVersion",
+    "schemaVersion",
+    "canonicalDocumentId",
+    "canonicalDocumentVersion",
+    "tenantId",
+    "workflowId",
+    "status",
+    "assetReferences",
+    "issues",
+    "provenance"
+  ],
+  "properties": {
+    "handoffVersion": { "const": "1.0" },
+    "schemaVersion": { "const": "1.0" },
+    "canonicalDocumentId": {
+      "$ref": "urn:siromix:docx-ingestion:canonical-document:1.0#/$defs/opaqueId"
+    },
+    "canonicalDocumentVersion": { "type": "integer", "minimum": 1 },
+    "tenantId": {
+      "$ref": "urn:siromix:docx-ingestion:canonical-document:1.0#/$defs/opaqueId"
+    },
+    "workflowId": {
+      "$ref": "urn:siromix:docx-ingestion:canonical-document:1.0#/$defs/opaqueId"
+    },
+    "status": { "enum": ["SUCCEEDED", "SUCCEEDED_WITH_WARNINGS"] },
+    "assetReferences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["assetId", "mediaType", "byteSize", "validationStatus"],
+        "properties": {
+          "assetId": {
+            "$ref": "urn:siromix:docx-ingestion:canonical-document:1.0#/$defs/opaqueId"
+          },
+          "mediaType": {
+            "type": "string",
+            "pattern": "^[a-z0-9.+-]+/[a-z0-9.+-]+$"
+          },
+          "byteSize": { "type": "integer", "minimum": 0 },
+          "validationStatus": { "enum": ["VALID", "WARNING", "BLOCKED"] }
+        }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:siromix:docx-ingestion:canonical-document:1.0#/$defs/issue"
+      }
+    },
+    "provenance": {
+      "$ref": "urn:siromix:docx-ingestion:canonical-document:1.0#/$defs/provenance"
+    }
+  }
+}

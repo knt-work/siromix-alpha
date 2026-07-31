@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0",
+  "canonicalDocumentId": "canonical:example",
+  "canonicalDocumentVersion": 1,
+  "tenantId": "tenant:example",
+  "workflowId": "workflow:example",
+  "sourceDocumentVersionId": "source:example:v1",
+  "sourceContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "parserIdentity": "siromix-docx-parser",
+  "parserVersion": "1.0.0",
+  "canonicalizationConfigVersion": "1.0.0",
+  "status": "SUCCEEDED",
+  "blocks": [
+    {
+      "blockId": "block:heading:1",
+      "ordinal": 0,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/document/body/p[1]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "heading",
+      "level": 1,
+      "inlineContent": [
+        {
+          "type": "text",
+          "text": "Example exam"
+        }
+      ]
+    }
+  ],
+  "assetReferences": [],
+  "relationships": [],
+  "issues": [],
+  "provenance": {
+    "ingestionAttemptId": "attempt:example:1",
+    "correlationId": "correlation:example",
+    "createdAt": "2026-07-31T00:00:00.000Z"
+  }
+}

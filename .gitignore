@@ -14,3 +14,4 @@ readiness-report.json
 .siromix/
 performance-report.json
 artifacts/
+packages/docx-ingestion/generated/

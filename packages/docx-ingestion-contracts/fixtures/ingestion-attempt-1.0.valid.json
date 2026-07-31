@@ -1,0 +1,23 @@
+{
+  "attemptId": "attempt:example:1",
+  "sequence": 1,
+  "sourceDocumentVersionId": "source:example:v1",
+  "idempotencyKey": "ingest:example:1",
+  "correlationId": "correlation:example",
+  "parserIdentity": "siromix-docx-parser",
+  "parserVersion": "1.0.0",
+  "schemaVersion": "1.0",
+  "canonicalizationConfigVersion": "1.0.0",
+  "status": "SUCCEEDED",
+  "stageTimestamps": {
+    "RECEIVED": "2026-07-31T00:00:00Z",
+    "SUCCEEDED": "2026-07-31T00:00:01Z"
+  },
+  "retryClassification": "NOT_APPLICABLE",
+  "workerIdentity": "document-ai",
+  "workerVersion": "1.0.0",
+  "reuseDecision": "NOT_CHECKED",
+  "metrics": {
+    "durationMs": 1000
+  }
+}

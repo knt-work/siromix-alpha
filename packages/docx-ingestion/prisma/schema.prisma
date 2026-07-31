@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DocxValidationStatus {
+  VALID
+  BLOCKED
+}
+
+model DocxSourceValidationResult {
+  sourceDocumentVersionId String               @id
+  tenantId                String               @db.Uuid
+  workflowId              String
+  correlationId           String               @db.Uuid
+  privateObjectReference  String
+  originalFilename        String
+  declaredMimeType        String
+  status                  DocxValidationStatus
+  issueCode               String?
+  reasonCode              String?
+  detectedMimeType        String?
+  byteSize                Int
+  contentHash             String
+  malwareVerdict          String?
+  malwareReference        String?
+  validatedAt             DateTime             @db.Timestamptz
+
+  @@index([tenantId, workflowId])
+}

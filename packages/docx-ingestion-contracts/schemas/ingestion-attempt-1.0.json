@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:siromix:docx-ingestion:ingestion-attempt:1.0",
+  "title": "IngestionAttempt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "attemptId",
+    "sequence",
+    "sourceDocumentVersionId",
+    "idempotencyKey",
+    "correlationId",
+    "parserIdentity",
+    "parserVersion",
+    "schemaVersion",
+    "canonicalizationConfigVersion",
+    "status",
+    "stageTimestamps",
+    "workerIdentity",
+    "workerVersion",
+    "reuseDecision",
+    "metrics"
+  ],
+  "properties": {
+    "attemptId": { "$ref": "#/$defs/opaqueId" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "sourceDocumentVersionId": { "$ref": "#/$defs/opaqueId" },
+    "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "correlationId": { "$ref": "#/$defs/opaqueId" },
+    "parserIdentity": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "parserVersion": { "$ref": "#/$defs/version" },
+    "schemaVersion": { "const": "1.0" },
+    "canonicalizationConfigVersion": { "$ref": "#/$defs/version" },
+    "status": { "$ref": "#/$defs/status" },
+    "stageTimestamps": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/status" },
+      "additionalProperties": { "$ref": "#/$defs/timestamp" }
+    },
+    "retryClassification": {
+      "enum": ["NOT_APPLICABLE", "TRANSIENT", "PERMANENT"]
+    },
+    "cancellationEventId": { "$ref": "#/$defs/opaqueId" },
+    "resumedFromAttemptId": { "$ref": "#/$defs/opaqueId" },
+    "outcomeCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+    "workerIdentity": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "workerVersion": { "$ref": "#/$defs/version" },
+    "reuseDecision": { "enum": ["NOT_CHECKED", "REUSED", "REPROCESS"] },
+    "metrics": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
+      "additionalProperties": { "type": "number", "minimum": 0 }
+    }
+  },
+  "$defs": {
+    "opaqueId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "status": {
+      "enum": [
+        "RECEIVED",
+        "VALIDATING_SOURCE",
+        "HASHING_SOURCE",
+        "CHECKING_REUSE",
+        "PARSING_PACKAGE",
+        "TRANSFORMING_CANONICAL",
+        "EXTRACTING_ASSETS",
+        "VALIDATING_CANONICAL",
+        "PERSISTING_RESULT",
+        "FAILED_RETRYABLE",
+        "CANCELLED",
+        "UNDO_REQUESTED",
+        "RESUMING",
+        "SUCCEEDED",
+        "SUCCEEDED_WITH_WARNINGS",
+        "FAILED_PERMANENT"
+      ]
+    }
+  }
+}

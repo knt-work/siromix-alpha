@@ -34,6 +34,7 @@ test("AC-001/003/020 workspace, pins, commands, and generated drift", () => {
     "apps/api",
     "workers/document-ai",
     "packages/contracts",
+    "packages/docx-ingestion-contracts",
     "packages/config",
     "packages/database",
     "packages/observability",
@@ -130,7 +131,7 @@ test("AC-005/006 migrations and only approved shared persistence primitives", ()
   );
   assert.doesNotMatch(
     schema,
-    /model (Exam|Question|Document|Canonical|Artifact|Permutation|Answer)/,
+    /(?:model|enum) (Exam|Question|Document|Canonical|Artifact|Permutation|Answer|Docx)/,
   );
 });
 
@@ -332,7 +333,7 @@ test("AC-002/020 unified lifecycle owns applications, migrations, and workers", 
   for (const marker of [
     "startApplications",
     "stopApplications",
-    "prisma:migrate",
+    "db:migrate",
     "@siromix/web",
     "@siromix/api",
     "siromix_worker.main",
@@ -357,18 +358,56 @@ test("AC-023 failure paths use stable classifications and bounded behavior", () 
   }
 });
 
-test("AC-025 static boundary scan finds no feature-owned implementation", () => {
+test("MVP-AC-016 owner-scoped boundaries isolate Foundation from approved features", () => {
   const forbidden =
-    /\b(DraftExam|MasterExam|QuestionJson|CanonicalDocument|PermutationMatrix|AnswerMatrix|MixExamWorkflow|PublishExamWorkflow)\b/;
-  for (const file of allFiles(".").filter(
-    (path) =>
-      !path.includes(`${resolve(root, "specs")}`) &&
-      !path.includes(`${resolve(root, "tests")}`) &&
-      !path.includes("node_modules") &&
-      !path.includes(".venv") &&
-      !path.includes(".git"),
-  )) {
+    /\b(DraftExam|MasterExam|QuestionJson|CanonicalDocument|PermutationMatrix|AnswerMatrix|MixExamWorkflow|PublishExamWorkflow|DocxSourceValidationResult|DocxValidationStatus)\b/;
+  const foundationOwnedRoots = [
+    "packages/contracts",
+    "packages/config",
+    "packages/database",
+    "packages/observability",
+    "packages/testkit",
+    "packages/storage",
+    "packages/auth",
+    "packages/workflow",
+    "apps/api",
+    "apps/web",
+    "scripts",
+    "infra",
+  ];
+  const foundationFiles = foundationOwnedRoots.flatMap((path) =>
+    allFiles(path),
+  );
+  for (const file of foundationFiles) {
     if (/\.(ts|tsx|py|prisma|json|mjs)$/.test(file))
       assert.doesNotMatch(readFileSync(file, "utf8"), forbidden, file);
   }
+  assert.equal(
+    json("packages/docx-ingestion-contracts/package.json").name,
+    "@siromix/docx-ingestion-contracts",
+  );
+  const docxPersistenceSchema = read(
+    "packages/docx-ingestion/prisma/schema.prisma",
+  );
+  assert.match(docxPersistenceSchema, /model DocxSourceValidationResult/);
+  assert.match(docxPersistenceSchema, /enum DocxValidationStatus/);
+  assert.ok(
+    existsSync(
+      resolve(
+        root,
+        "packages/docx-ingestion/prisma/migrations/202607310001_docx_source_validation/migration.sql",
+      ),
+    ),
+  );
+  assert.doesNotMatch(
+    read("packages/contracts/src/index.ts"),
+    /docx-ingestion|@siromix\/docx-ingestion-contracts/i,
+  );
+  for (const file of foundationFiles)
+    if (/\.(ts|tsx|mjs)$/.test(file))
+      assert.doesNotMatch(
+        readFileSync(file, "utf8"),
+        /@siromix\/docx-ingestion-contracts/,
+        file,
+      );
 });

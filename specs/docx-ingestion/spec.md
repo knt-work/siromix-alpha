@@ -10,6 +10,8 @@ The feature succeeds when downstream systems can consume canonical data without 
 
 DOCX Ingestion is the format-boundary upstream of Exam Creation and AI Processing. It owns safe source validation, DOCX package parsing, canonical transformation, asset extraction/storage, Canonical Document validation, persistence/reuse, and ingestion-result publication.
 
+It also owns the Canonical Document contract boundary in the workspace package `@siromix/docx-ingestion-contracts` at `packages/docx-ingestion-contracts`. Foundation's `@siromix/contracts` remains limited to domain-neutral Foundation envelopes and must not contain, import, or re-export DOCX Ingestion contracts.
+
 It implements SiroMix Constitution v1.1.0 principles for canonical data, parse-once reuse, stable identity, versioned contracts, no silent data loss, durable/idempotent processing, least privilege, local parity, and testable correctness.
 
 Exam Creation remains the lifecycle orchestrator and decides whether an ingestion result permits AI processing according to the severity contract defined here. AI Processing consumes only a successful Canonical Document version; it does not inspect the DOCX or parser output.
@@ -123,6 +125,8 @@ Authorization and tenant isolation must be enforced server-side and in storage a
 - **IngestionAuditEvent:** stable ID, tenant/workflow/source/canonical/attempt references, cancellation/resume references where applicable, event type, actor/service identity, authoritative server timestamp, correlation ID, and minimal non-sensitive metadata.
 
 ### 8.2 Canonical Document Contract
+
+The authoritative JSON Schema, compatibility metadata, TypeScript readers, and contract fixtures must live in the workspace package `@siromix/docx-ingestion-contracts` at `packages/docx-ingestion-contracts`. TypeScript consumers import `@siromix/docx-ingestion-contracts` directly rather than through `@siromix/contracts`. A Python binding may be generated into the document worker only when generation provenance and conformance tests trace it to the authoritative feature-owned schema; the worker copy is not a second source of truth.
 
 The persisted and handoff contract must contain:
 
@@ -324,7 +328,7 @@ Stage ownership:
 - **AC-019:** Under PERFORMANCE_PROFILE_V1, fresh valid supported DOCX files up to 10 MiB meet the 60-second P95 terminal-canonicalization target and expose all required distributions and stage metrics.
 - **AC-020:** Parser, schema, or configuration upgrade creates an immutable linked Canonical Document version; unsupported consumer versions fail explicitly and rollback never reinterprets prior versions.
 - **AC-021:** Exam Creation receives stable status data sufficient to render the stage-only compact five-stage tracker horizontally or vertically by screen width, mark a failed stage, move focus to the error-card heading, expose one recovery action, show collapsed Technical details, identify reuse subtly, preserve the completed tracker above later AI status, and present persistent non-blocking warnings without interrupting downstream processing. Terminal status, Canonical Document version, issues, provenance, and recommended recovery mapping are included. Future AI Processing receives only successful versioned canonical data and stable authorized asset references.
-- **AC-022:** Ingestion performs no AI call, question extraction/generation, Question JSON validation, Draft/Master mutation, mixing, or publishing behavior.
+- **AC-022:** Ingestion performs no AI call, question extraction/generation, Question JSON validation, Draft/Master mutation, mixing, or publishing behavior. Its contracts remain isolated in `@siromix/docx-ingestion-contracts`; Foundation's `@siromix/contracts` neither contains nor re-exports them, and consumers depend on the declared feature package directly.
 - **AC-023:** Every SECURITY_PROFILE_V1 byte/count/ratio/path/XML/asset boundary and BR-028 CPU/memory/time/storage/PID/network constraint is enforced at the exact boundary without partial handoff or sensitive diagnostics.
 - **AC-024:** Formula fixtures produce deterministic normalized Presentation MathML and optional derived linear data with private OMML provenance; failed or ambiguous meaning-preserving conversion blocks and downstream contracts contain no OMML dependency.
 - **AC-025:** Each BR-030 supported, warning, blocking, grouped, connector, ambiguous, and meaning-bearing shape case produces the specified canonical relationship and severity.

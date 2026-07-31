@@ -1,0 +1,48 @@
+{
+  "taxonomyVersion": "1.0",
+  "fields": [
+    {
+      "name": "category",
+      "alternatives": [
+        "SOURCE",
+        "SECURITY",
+        "STRUCTURE",
+        "CONTENT",
+        "FORMULA",
+        "SHAPE",
+        "ASSET",
+        "RELATIONSHIP",
+        "SCHEMA"
+      ]
+    },
+    {
+      "name": "severity",
+      "alternatives": ["BLOCKING_ERROR", "WARNING"]
+    },
+    {
+      "name": "retryability",
+      "alternatives": ["NOT_RETRYABLE", "RETRYABLE"]
+    },
+    {
+      "name": "terminal",
+      "alternatives": [true, false]
+    },
+    {
+      "name": "downstreamPermitted",
+      "alternatives": [true, false]
+    },
+    {
+      "name": "preservedWork",
+      "alternatives": ["COMMITTED_STAGES_PRESERVED", "ALL_VALID_WORK_PRESERVED"]
+    },
+    {
+      "name": "recommendedAction",
+      "alternatives": [
+        "REPLACE_DOCX",
+        "RETRY",
+        "CONTACT_SUPPORT",
+        "REVIEW_WARNING"
+      ]
+    }
+  ]
+}
