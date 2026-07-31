@@ -31,7 +31,7 @@ AI question behavior, Draft/Master lifecycle, mixing, and publishing are exclude
 | AC-019 | Fresh inputs through 10 MiB meet 60-second P95 and required reporting under PERFORMANCE_PROFILE_V1 | Performance | Pending |
 | AC-020 | Upgrades create immutable linked versions; consumer incompatibility and rollback are explicit | Contract / Migration | Pending |
 | AC-021 | Handoff supports every confirmed tracker, warning, failure, technical-detail, reuse, responsive, accessibility, and AI-transition behavior | Contract / Integration / Accessibility | Pending |
-| AC-022 | Calls or mutations outside ingestion ownership are impossible | Boundary / Integration | Pending |
+| AC-022 | Calls or mutations outside ingestion ownership are impossible; DOCX contracts remain in their declared feature package and outside Foundation exports | Boundary / Integration / Architecture | Pending |
 | AC-023 | Exact SECURITY_PROFILE_V1 and parser sandbox boundaries are enforced | Security / Boundary / Integration | Pending |
 | AC-024 | MathML normalization, linear aid, private OMML provenance, blockers, and downstream isolation work | Golden / Contract / Security | Pending |
 | AC-025 | Every supported/warning/blocking/ambiguous shape family and relationship is classified correctly | Golden / Contract | Pending |
@@ -66,6 +66,7 @@ AI question behavior, Draft/Master lifecycle, mixing, and publishing are exclude
 - Verify handoff never includes temporary parser output or DOCX XML structures.
 - Verify consumers explicitly accept supported schema versions and reject unsupported ones.
 - Verify issue/error/status codes remain backward compatible within their declared version.
+- Verify the authoritative schema, compatibility metadata, TypeScript readers, and fixtures live in `@siromix/docx-ingestion-contracts`; TypeScript consumers import that package directly; any Python worker binding conforms to the authoritative schema; and `@siromix/contracts` contains and exports only Foundation-owned contracts.
 
 ## Golden Document Tests
 
@@ -168,6 +169,13 @@ Each golden fixture is canonicalized repeatedly and across worker restart to ver
 - Storage/database/worker/malware dependency outages classify transient versus permanent behavior correctly.
 - Hash mismatch, missing reused asset, incompatible schema, stale cancel/retry/Undo, expired or unauthorized Undo, resume failure, cancellation/completion race, retention failure, and performance-metric absence are explicit.
 - No error path silently drops a supported or unsupported source element.
+
+## Boundary Tests
+
+- Reject DOCX contract schemas, readers, fixtures, imports, or re-exports inside Foundation-owned packages, including `@siromix/contracts`.
+- Accept DOCX contract artifacts in the workspace package `@siromix/docx-ingestion-contracts` at `packages/docx-ingestion-contracts` and verify each artifact is traceable to this specification.
+- Reject consumers that obtain DOCX contracts indirectly through Foundation exports.
+- Verify generated Python worker bindings remain conformance-tested against the feature-owned authoritative schema and cannot become an independent source of truth.
 
 ## Test Data
 

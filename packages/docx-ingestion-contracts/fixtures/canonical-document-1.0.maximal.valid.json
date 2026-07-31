@@ -1,0 +1,365 @@
+{
+  "schemaVersion": "1.0",
+  "canonicalDocumentId": "canonical:maximal",
+  "canonicalDocumentVersion": 2,
+  "tenantId": "tenant:example",
+  "workflowId": "workflow:maximal",
+  "sourceDocumentVersionId": "source:maximal:v1",
+  "sourceContentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "parserIdentity": "siromix-docx-parser",
+  "parserVersion": "1.0.0",
+  "canonicalizationConfigVersion": "1.0.0",
+  "status": "SUCCEEDED_WITH_WARNINGS",
+  "blocks": [
+    {
+      "blockId": "block:heading",
+      "ordinal": 0,
+      "sourceLocator": { "part": "word/document.xml", "path": "/body/p[1]" },
+      "relationshipIds": ["relationship:precedes"],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "heading",
+      "level": 1,
+      "inlineContent": [{ "type": "text", "text": "Maximal contract" }]
+    },
+    {
+      "blockId": "block:paragraph",
+      "ordinal": 1,
+      "sourceLocator": { "part": "word/document.xml", "path": "/body/p[2]" },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "paragraph",
+      "inlineContent": [{ "type": "text", "text": "Question content" }],
+      "semantics": "BODY"
+    },
+    {
+      "blockId": "block:list",
+      "ordinal": 2,
+      "sourceLocator": { "part": "word/document.xml", "path": "/body/list[1]" },
+      "relationshipIds": ["relationship:list-item"],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "list",
+      "listType": "ORDERED",
+      "nestingLevel": 0,
+      "itemBlockIds": ["block:list-item"]
+    },
+    {
+      "blockId": "block:list-item",
+      "ordinal": 3,
+      "parentBlockId": "block:list",
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/list[1]/item[1]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "listItem",
+      "inlineContent": [{ "type": "text", "text": "First item" }],
+      "childBlockIds": []
+    },
+    {
+      "blockId": "block:table",
+      "ordinal": 4,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/table[1]"
+      },
+      "relationshipIds": ["relationship:table-row"],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "table",
+      "rowBlockIds": ["block:table-row"],
+      "readingOrder": ["block:table-cell"]
+    },
+    {
+      "blockId": "block:table-row",
+      "ordinal": 5,
+      "parentBlockId": "block:table",
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/table[1]/row[1]"
+      },
+      "relationshipIds": ["relationship:row-cell"],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "tableRow",
+      "cellBlockIds": ["block:table-cell"]
+    },
+    {
+      "blockId": "block:table-cell",
+      "ordinal": 6,
+      "parentBlockId": "block:table-row",
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/table[1]/row[1]/cell[1]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "tableCell",
+      "rowSpan": 2,
+      "columnSpan": 2,
+      "childBlockIds": ["block:paragraph"]
+    },
+    {
+      "blockId": "block:image",
+      "ordinal": 7,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/p[3]/drawing[1]"
+      },
+      "relationshipIds": ["relationship:image-asset"],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "image",
+      "assetId": "asset:image",
+      "alternativeText": "Coordinate diagram",
+      "description": "A labeled coordinate diagram",
+      "placement": "INLINE"
+    },
+    {
+      "blockId": "block:formula",
+      "ordinal": 8,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/p[4]/math[1]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "formula",
+      "presentationMathMl": "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>x</mi></math>",
+      "normalizedLinear": "x",
+      "normalizedLatex": "x",
+      "privateOmmlSourceReference": "tenants/example/omml/formula-1.xml",
+      "conversionStatus": "CONVERTED"
+    },
+    {
+      "blockId": "block:shape:text-box",
+      "ordinal": 9,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/shape[1]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "shape",
+      "shapeFamily": "TEXT_BOX",
+      "inlineContent": [{ "type": "text", "text": "Important" }],
+      "relatedAssetIds": [],
+      "placementRelationshipIds": []
+    },
+    {
+      "blockId": "block:shape:simple",
+      "ordinal": 10,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/shape[2]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "shape",
+      "shapeFamily": "SIMPLE_SHAPE",
+      "inlineContent": [{ "type": "text", "text": "A" }],
+      "relatedAssetIds": [],
+      "placementRelationshipIds": []
+    },
+    {
+      "blockId": "block:shape:line",
+      "ordinal": 11,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/shape[3]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "shape",
+      "shapeFamily": "LINE",
+      "inlineContent": [],
+      "relatedAssetIds": [],
+      "placementRelationshipIds": []
+    },
+    {
+      "blockId": "block:shape:arrow",
+      "ordinal": 12,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/shape[4]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "shape",
+      "shapeFamily": "ARROW",
+      "inlineContent": [],
+      "relatedAssetIds": [],
+      "placementRelationshipIds": []
+    },
+    {
+      "blockId": "block:shape:connector",
+      "ordinal": 13,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/shape[5]"
+      },
+      "relationshipIds": ["relationship:connector"],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "shape",
+      "shapeFamily": "CONNECTOR",
+      "inlineContent": [],
+      "relatedAssetIds": [],
+      "placementRelationshipIds": ["relationship:connector"]
+    },
+    {
+      "blockId": "block:shape:picture",
+      "ordinal": 14,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/shape[6]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "shape",
+      "shapeFamily": "PICTURE",
+      "inlineContent": [],
+      "relatedAssetIds": ["asset:image"],
+      "placementRelationshipIds": []
+    },
+    {
+      "blockId": "block:shape:group",
+      "ordinal": 15,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/shape[7]"
+      },
+      "relationshipIds": [],
+      "issueIds": [],
+      "validationStatus": "VALID",
+      "type": "shape",
+      "shapeFamily": "GROUP",
+      "inlineContent": [],
+      "relatedAssetIds": [],
+      "placementRelationshipIds": []
+    },
+    {
+      "blockId": "block:shape:canvas",
+      "ordinal": 16,
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/shape[8]"
+      },
+      "relationshipIds": [],
+      "issueIds": ["issue:decorative-loss"],
+      "validationStatus": "WARNING",
+      "type": "shape",
+      "shapeFamily": "CANVAS",
+      "inlineContent": [],
+      "relatedAssetIds": [],
+      "placementRelationshipIds": []
+    }
+  ],
+  "assetReferences": [
+    {
+      "assetId": "asset:image",
+      "tenantId": "tenant:example",
+      "contentHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "physicalContentKey": "tenants/example/content/image-1",
+      "mediaType": "image/png",
+      "byteSize": 1024,
+      "widthPixels": 640,
+      "heightPixels": 480,
+      "privateObjectKey": "tenants/example/assets/image-1.png",
+      "validationStatus": "VALID",
+      "sourceRelationshipLocator": "word/_rels/document.xml.rels#rId5",
+      "retentionState": "ACTIVE",
+      "legalHold": false,
+      "referenceCount": 2
+    }
+  ],
+  "relationships": [
+    {
+      "relationshipId": "relationship:precedes",
+      "type": "PRECEDES",
+      "sourceBlockId": "block:heading",
+      "targetBlockId": "block:paragraph"
+    },
+    {
+      "relationshipId": "relationship:list-item",
+      "type": "CONTAINS",
+      "sourceBlockId": "block:list",
+      "targetBlockId": "block:list-item"
+    },
+    {
+      "relationshipId": "relationship:table-row",
+      "type": "CONTAINS",
+      "sourceBlockId": "block:table",
+      "targetBlockId": "block:table-row"
+    },
+    {
+      "relationshipId": "relationship:row-cell",
+      "type": "CONTAINS",
+      "sourceBlockId": "block:table-row",
+      "targetBlockId": "block:table-cell"
+    },
+    {
+      "relationshipId": "relationship:image-asset",
+      "type": "PLACED_WITH",
+      "sourceBlockId": "block:image",
+      "targetAssetId": "asset:image"
+    },
+    {
+      "relationshipId": "relationship:connector",
+      "type": "CONNECTS_TO",
+      "sourceBlockId": "block:shape:connector",
+      "targetBlockId": "block:shape:simple"
+    }
+  ],
+  "issues": [
+    {
+      "issueId": "issue:decorative-loss",
+      "code": "DECORATIVE_SHAPE_LOSS",
+      "severity": "WARNING",
+      "category": "SHAPE",
+      "safeSummary": "Decorative canvas styling was simplified.",
+      "sourceLocator": {
+        "part": "word/document.xml",
+        "path": "/body/shape[8]"
+      },
+      "affectedBlockId": "block:shape:canvas",
+      "downstreamPermitted": true,
+      "retryability": "NOT_RETRYABLE",
+      "terminal": false,
+      "preservedWork": "ALL_VALID_WORK_PRESERVED",
+      "recommendedAction": "REVIEW_WARNING",
+      "parserVersion": "1.0.0",
+      "schemaVersion": "1.0",
+      "canonicalizationConfigVersion": "1.0.0"
+    }
+  ],
+  "provenance": {
+    "ingestionAttemptId": "attempt:maximal:2",
+    "correlationId": "correlation:maximal",
+    "createdAt": "2026-07-31T12:00:00+07:00",
+    "priorCanonicalDocumentId": "canonical:maximal:v1",
+    "migrationReasonCode": "PARSER_UPGRADE"
+  },
+  "extensions": [
+    {
+      "namespace": "siromix.example",
+      "version": "1.0",
+      "values": {
+        "source": "fixture",
+        "confidence": 1,
+        "verified": true
+      }
+    }
+  ]
+}

@@ -34,8 +34,13 @@ Boundary rules:
 
 - Foundation owns shared primitives; feature specifications own feature behavior.
 - Foundation registers only content-free smoke workflows and shared envelopes.
-- Foundation creates no DOCX, canonical, AI, Draft/Master Exam, mixing, publishing, vector, or RAG behavior.
+- Foundation-owned modules create no DOCX, canonical, AI, Draft/Master Exam, mixing, publishing, vector, or RAG behavior and must not import or re-export feature-owned contracts or implementations.
+- The Foundation-owned `@siromix/contracts` package contains only the Foundation Envelope and other explicitly approved domain-neutral shared envelopes. Feature contracts belong to isolated feature-owned packages governed by their approved specifications.
+- Approved feature implementation is permitted outside Foundation-owned modules. Each feature artifact must have one declared owning specification and package/module boundary; unowned feature behavior and cross-owner imports remain prohibited.
+- DOCX Ingestion owns its Canonical Document schemas, compatibility policy, fixtures, TypeScript readers, and worker bindings in the workspace package `@siromix/docx-ingestion-contracts` at `packages/docx-ingestion-contracts`. A generated Python binding may be emitted into the document worker only when it remains traceable to and conformance-tested against that package's authoritative schema.
 - A feature may narrow shared retry/security rules; broadening requires an approved specification update.
+
+For boundary enforcement, Foundation-owned surfaces are the domain-neutral `@siromix/contracts`, configuration, authentication, database shared primitives listed in MVP-BR-005, storage, workflow foundation, observability, testkit, minimal application/worker bootstrap, and Foundation lifecycle/CI/infrastructure tooling. Feature-owned modules may integrate with those surfaces through their public contracts but must not place feature schemas, exports, registrations, persistence models, workflows, or business rules inside them.
 
 ## 4. User Roles
 
@@ -69,7 +74,7 @@ Foundation defines no upload, regenerate, approve, mix, publish, or other featur
 - **MVP-BR-015 — Observability and privacy:** Correlation/causation/trace context is represented consistently at shared boundaries. Structured Node/Python logging, safe errors, health, and audits redact prohibited content, credentials, signed URLs, and private object keys.
 - **MVP-BR-016 — Deterministic testing:** Mandatory unit, contract, integration, Temporal, storage, authentication, migration-safety, frontend smoke, E2E smoke, security, build, and boundary tests run through documented commands. Mandatory integration tests fail rather than silently skip when their test profile is absent.
 - **MVP-BR-017 — CI safety:** CI performs locked install, format, lint, typecheck, contract drift, unit, frontend, E2E, Python, integration, security, build, and artifact-metadata checks. Pull requests receive no production deployment secret and cannot promote production artifacts.
-- **MVP-BR-018 — Boundaries and readiness:** Static/runtime checks reject feature-owned behavior. A safe machine-readable readiness report identifies supported tools, dependencies, migrations, contract version, mandatory commands, and artifact commit.
+- **MVP-BR-018 — Boundaries and readiness:** Static/runtime checks reject feature-owned behavior, contracts, imports, re-exports, and registrations inside Foundation-owned modules while permitting implementation in isolated feature-owned packages governed by approved feature specifications. Checks also reject unowned feature artifacts and unauthorized cross-owner dependencies. A safe machine-readable readiness report identifies supported tools, dependencies, migrations, contract version, mandatory commands, and artifact commit.
 
 ### 5.2 Production Hardening
 
@@ -108,7 +113,7 @@ The following requirements are required before production deployment but do not 
 - **MVP-NFR-001 — Security:** Least privilege, tenant isolation, secure secret handling, safe file/storage behavior, production TLS/cookie fail-closed policy, and privacy-safe diagnostics are mandatory.
 - **MVP-NFR-002 — Determinism:** Locked installs, contract generation, tests, IDs/clocks, retries, and local adapters produce repeatable outcomes.
 - **MVP-NFR-003 — Reliability:** Committed transaction/outbox/idempotency/session/workflow state survives retry or restart without duplicate logical effects.
-- **MVP-NFR-004 — Maintainability:** Shared packages contain interfaces/envelopes/utilities only and remain free of feature orchestration/business rules.
+- **MVP-NFR-004 — Maintainability:** Foundation-owned shared packages contain only domain-neutral interfaces, envelopes, and utilities and remain free of feature contracts, orchestration, and business rules. Feature-owned packages may contain their approved domain contracts and behavior but must not become undeclared shared dumping grounds.
 - **MVP-NFR-005 — Local readiness:** Supported local Windows development and CI/Linux application architecture use the same contracts, migrations, queues, and adapters.
 
 ### 7.2 Production Hardening
@@ -211,7 +216,7 @@ MVP_FOUNDATION_APPROVED
 - **MVP-AC-013:** Node, Jest/Testing Library coverage, Playwright smoke, Pytest, deterministic testkit, mandatory integration, Temporal, storage, authentication, migration-safety, security, and build commands pass; mandatory integration cannot silently skip.
 - **MVP-AC-014:** CI configuration enforces locked install, format, lint, typecheck, contract drift, unit, frontend, E2E, Python, integration, security, build, and artifact-metadata gates without exposing production deployment secrets to pull requests.
 - **MVP-AC-015:** Reset rejects every non-test or non-isolated target and never deletes development/production data.
-- **MVP-AC-016:** Static/runtime boundaries prove no DOCX, canonical, AI, Draft/Master Exam, cap-request, mixing, publishing, vector, or RAG behavior exists in Foundation.
+- **MVP-AC-016:** Static/runtime boundaries prove no DOCX, canonical, AI, Draft/Master Exam, cap-request, mixing, publishing, vector, or RAG behavior, contract, import, re-export, or registration exists in Foundation-owned modules; approved feature artifacts are accepted only in their declared owner packages/modules, and unowned or unauthorized cross-owner artifacts fail.
 - **MVP-AC-017:** Consumer fixtures show that Exam Creation, DOCX Ingestion, and AI Processing can consume the declared shared authentication, tenancy, persistence, Temporal, storage, contract, configuration, observability, test, and rollback primitives.
 - **MVP-AC-018:** Safe machine-readable readiness identifies supported tools, dependencies, migrations, authoritative contract version, mandatory test commands, supported platforms, and artifact commit.
 

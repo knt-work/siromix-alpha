@@ -30,7 +30,7 @@ Production Hardening failures or missing evidence must be reported but must not 
 | MVP-AC-013 | Node, frontend coverage, E2E, Python, mandatory integration, workflow, storage, migration, security, and build commands | Test infrastructure | Passed |
 | MVP-AC-014 | CI required-gate configuration and pull-request secret/promotion restrictions | CI contract / Security | Passed |
 | MVP-AC-015 | Exact isolated test reset; reject development/production/ambiguous targets | Destructive safety | Passed |
-| MVP-AC-016 | Static/runtime feature-boundary inventory | Architecture / Negative | Passed |
+| MVP-AC-016 | Owner-scoped Foundation boundary, feature ownership, and cross-owner dependency inventory | Architecture / Negative | Pending update — global prohibition must become owner-scoped |
 | MVP-AC-017 | Exam Creation, DOCX Ingestion, and AI Processing consumer fixtures | Consumer contract | Passed |
 | MVP-AC-018 | Safe versioned readiness report completeness | Operations contract | Passed |
 
@@ -59,7 +59,8 @@ Production Hardening failures or missing evidence must be reported but must not 
 - Drift fails when generated output differs.
 - Writers emit `1.0`; no reader accepts `1.1` until an authoritative `1.1` schema is added.
 - Consumer fixtures exist for Exam Creation, DOCX Ingestion, and AI Processing.
-- Static checks prohibit feature orchestration/business rules.
+- Static checks prohibit feature contracts, orchestration, business rules, imports, re-exports, and registrations inside Foundation-owned modules while accepting approved artifacts in declared feature-owned packages.
+- `@siromix/contracts` remains Foundation-envelope-only and cannot import or re-export `@siromix/docx-ingestion-contracts`.
 
 ## MVP Integration Tests
 
@@ -98,8 +99,11 @@ Historical snapshot combinations, lock-contention certification, and production-
 
 ## MVP Boundary Tests
 
-- Database, routes, workflows, task queues, storage behaviors, contracts, and imports contain only Foundation-owned primitives.
-- No DOCX, canonical, AI, Exam/Draft/Master/cap-request, mixing, publishing, vector, or RAG implementation exists.
+- Foundation-owned database models, routes, workflows, task queues, storage behaviors, contracts, exports, and imports contain only Foundation-owned primitives.
+- No DOCX, canonical, AI, Exam/Draft/Master/cap-request, mixing, publishing, vector, or RAG implementation, contract, import, re-export, or registration exists inside Foundation-owned modules.
+- Approved feature artifacts are accepted only when their path and dependency direction match a declared owning specification and feature-owned package/module.
+- The workspace package `@siromix/docx-ingestion-contracts` at `packages/docx-ingestion-contracts` is accepted as DOCX Ingestion-owned; `@siromix/contracts` must remain Foundation-envelope-only and must not import or re-export it.
+- Unowned feature artifacts, feature artifacts placed in Foundation-owned modules, and unauthorized cross-owner imports fail.
 - Registering a consumer/adapter/worker leaves unrelated owner catalogs unchanged.
 
 ## Production Hardening Tests
@@ -155,7 +159,7 @@ All fixtures are synthetic, non-sensitive, deterministic, and tenant isolated.
 - MVP-AC-001 through MVP-AC-018 each have at least one implemented, passing mapped test.
 - All MVP mandatory test commands pass.
 - Foundation Envelope readers and writers conform to authoritative schema `1.0` and reject `1.1`.
-- No feature-owned behavior exists.
+- No feature-owned behavior or contract exists inside Foundation-owned modules; approved feature artifacts exist only within declared owner boundaries.
 - No unresolved Constitution violation remains.
 - Pulsar status is `Approved` for **MVP Foundation**.
 

@@ -1,0 +1,16 @@
+{
+  "handoffVersion": "1.0",
+  "schemaVersion": "1.0",
+  "canonicalDocumentId": "canonical:example",
+  "canonicalDocumentVersion": 1,
+  "tenantId": "tenant:example",
+  "workflowId": "workflow:example",
+  "status": "SUCCEEDED",
+  "assetReferences": [],
+  "issues": [],
+  "provenance": {
+    "ingestionAttemptId": "attempt:example:1",
+    "correlationId": "correlation:example",
+    "createdAt": "2026-07-31T00:00:00.000Z"
+  }
+}

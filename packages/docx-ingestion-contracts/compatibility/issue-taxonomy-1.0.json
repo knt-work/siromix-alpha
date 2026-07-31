@@ -1,0 +1,161 @@
+{
+  "version": "1.0",
+  "unknownCodePolicy": "REJECT",
+  "ambiguousSeverityPolicy": "BLOCKING_ERROR",
+  "entries": [
+    {
+      "code": "SOURCE_VALIDATION_FAILED",
+      "category": "SOURCE",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "The source document could not be validated."
+    },
+    {
+      "code": "SECURITY_VALIDATION_FAILED",
+      "category": "SECURITY",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "The source document did not pass security validation."
+    },
+    {
+      "code": "CANONICAL_SCHEMA_INVALID",
+      "category": "SCHEMA",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "CONTACT_SUPPORT",
+      "safeSummary": "A valid canonical document could not be produced."
+    },
+    {
+      "code": "MEANINGFUL_CONTENT_ABSENT",
+      "category": "CONTENT",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "The document contains no meaningful supported content."
+    },
+    {
+      "code": "SEMANTIC_ORDER_LOST",
+      "category": "STRUCTURE",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "The document reading order could not be preserved."
+    },
+    {
+      "code": "REQUIRED_IMAGE_MISSING",
+      "category": "ASSET",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "A required image is missing or unreadable."
+    },
+    {
+      "code": "REQUIRED_TABLE_INVALID",
+      "category": "STRUCTURE",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "A required table could not be preserved."
+    },
+    {
+      "code": "FORMULA_CONVERSION_FAILED",
+      "category": "FORMULA",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "A meaning-bearing formula could not be converted safely."
+    },
+    {
+      "code": "REQUIRED_SHAPE_UNSUPPORTED",
+      "category": "SHAPE",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "A meaning-bearing shape could not be preserved."
+    },
+    {
+      "code": "REQUIRED_RELATIONSHIP_BROKEN",
+      "category": "RELATIONSHIP",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "A required document relationship is missing or broken."
+    },
+    {
+      "code": "MEANING_AFFECTING_CONTENT_LOSS",
+      "category": "CONTENT",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "REPLACE_DOCX",
+      "safeSummary": "Unsupported content could change educational meaning."
+    },
+    {
+      "code": "SEVERITY_AMBIGUOUS",
+      "category": "CONTENT",
+      "severity": "BLOCKING_ERROR",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": true,
+      "downstreamPermitted": false,
+      "preservedWork": "COMMITTED_STAGES_PRESERVED",
+      "recommendedAction": "CONTACT_SUPPORT",
+      "safeSummary": "The effect of unsupported content could not be determined safely."
+    },
+    {
+      "code": "PRESENTATION_ONLY_CONTENT_LOSS",
+      "category": "CONTENT",
+      "severity": "WARNING",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": false,
+      "downstreamPermitted": true,
+      "preservedWork": "ALL_VALID_WORK_PRESERVED",
+      "recommendedAction": "REVIEW_WARNING",
+      "safeSummary": "Presentation-only formatting was simplified."
+    },
+    {
+      "code": "DECORATIVE_SHAPE_LOSS",
+      "category": "SHAPE",
+      "severity": "WARNING",
+      "retryability": "NOT_RETRYABLE",
+      "terminal": false,
+      "downstreamPermitted": true,
+      "preservedWork": "ALL_VALID_WORK_PRESERVED",
+      "recommendedAction": "REVIEW_WARNING",
+      "safeSummary": "Decorative shape content was simplified."
+    }
+  ]
+}

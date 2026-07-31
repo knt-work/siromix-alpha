@@ -1,0 +1,708 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:siromix:docx-ingestion:canonical-document:1.0",
+  "title": "CanonicalDocument",
+  "description": "Authoritative DOCX ingestion contract. Consumers must explicitly support schemaVersion 1.0 and reject unsupported versions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "canonicalDocumentId",
+    "canonicalDocumentVersion",
+    "tenantId",
+    "workflowId",
+    "sourceDocumentVersionId",
+    "sourceContentHash",
+    "parserIdentity",
+    "parserVersion",
+    "canonicalizationConfigVersion",
+    "status",
+    "blocks",
+    "assetReferences",
+    "relationships",
+    "issues",
+    "provenance"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "canonicalDocumentId": { "$ref": "#/$defs/opaqueId" },
+    "canonicalDocumentVersion": { "type": "integer", "minimum": 1 },
+    "tenantId": { "$ref": "#/$defs/opaqueId" },
+    "workflowId": { "$ref": "#/$defs/opaqueId" },
+    "sourceDocumentVersionId": { "$ref": "#/$defs/opaqueId" },
+    "sourceContentHash": { "$ref": "#/$defs/sha256" },
+    "parserIdentity": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "parserVersion": { "$ref": "#/$defs/version" },
+    "canonicalizationConfigVersion": { "$ref": "#/$defs/version" },
+    "status": { "enum": ["SUCCEEDED", "SUCCEEDED_WITH_WARNINGS"] },
+    "blocks": { "type": "array", "items": { "$ref": "#/$defs/block" } },
+    "assetReferences": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/asset" }
+    },
+    "relationships": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relationship" }
+    },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } },
+    "provenance": { "$ref": "#/$defs/provenance" },
+    "extensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["namespace", "version", "values"],
+        "properties": {
+          "namespace": { "type": "string", "pattern": "^[a-z][a-z0-9.-]+$" },
+          "version": { "$ref": "#/$defs/version" },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                { "type": "string" },
+                { "type": "number" },
+                { "type": "boolean" }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "opaqueId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "privateReference": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?!/)(?!.*(?:[Hh][Tt][Tt][Pp][Ss]?://|[?&](?:[Tt][Oo][Kk][Ee][Nn]|[Ss][Ii][Gg][Nn][Aa][Tt][Uu][Rr][Ee])=)).+$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "sourceLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["part", "path"],
+      "properties": {
+        "part": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "path": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "inlineContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text"],
+      "properties": {
+        "type": { "const": "text" },
+        "text": { "type": "string" }
+      }
+    },
+    "commonBlock": {
+      "type": "object",
+      "required": [
+        "blockId",
+        "ordinal",
+        "sourceLocator",
+        "relationshipIds",
+        "issueIds",
+        "validationStatus"
+      ],
+      "properties": {
+        "blockId": { "$ref": "#/$defs/opaqueId" },
+        "ordinal": { "type": "integer", "minimum": 0 },
+        "parentBlockId": { "$ref": "#/$defs/opaqueId" },
+        "sourceLocator": { "$ref": "#/$defs/sourceLocator" },
+        "relationshipIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/opaqueId" }
+        },
+        "issueIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/opaqueId" }
+        },
+        "validationStatus": { "enum": ["VALID", "WARNING", "BLOCKED"] }
+      }
+    },
+    "block": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "oneOf": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": ["type", "level", "inlineContent"],
+              "properties": {
+                "type": { "const": "heading" },
+                "level": { "type": "integer", "minimum": 1, "maximum": 9 },
+                "inlineContent": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/inlineContent" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": ["type", "inlineContent", "semantics"],
+              "properties": {
+                "type": { "const": "paragraph" },
+                "inlineContent": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/inlineContent" }
+                },
+                "semantics": { "enum": ["BODY", "CAPTION", "LABEL", "NOTE"] }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": ["type", "listType", "nestingLevel", "itemBlockIds"],
+              "properties": {
+                "type": { "const": "list" },
+                "listType": { "enum": ["ORDERED", "UNORDERED"] },
+                "nestingLevel": { "type": "integer", "minimum": 0 },
+                "itemBlockIds": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "$ref": "#/$defs/opaqueId" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": ["type", "inlineContent", "childBlockIds"],
+              "properties": {
+                "type": { "const": "listItem" },
+                "inlineContent": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/inlineContent" }
+                },
+                "childBlockIds": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/opaqueId" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": ["type", "rowBlockIds", "readingOrder"],
+              "properties": {
+                "type": { "const": "table" },
+                "rowBlockIds": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "$ref": "#/$defs/opaqueId" }
+                },
+                "readingOrder": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "$ref": "#/$defs/opaqueId" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": ["type", "cellBlockIds"],
+              "properties": {
+                "type": { "const": "tableRow" },
+                "cellBlockIds": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "$ref": "#/$defs/opaqueId" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": ["type", "rowSpan", "columnSpan", "childBlockIds"],
+              "properties": {
+                "type": { "const": "tableCell" },
+                "rowSpan": { "type": "integer", "minimum": 1 },
+                "columnSpan": { "type": "integer", "minimum": 1 },
+                "childBlockIds": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/opaqueId" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": ["type", "assetId", "placement"],
+              "properties": {
+                "type": { "const": "image" },
+                "assetId": { "$ref": "#/$defs/opaqueId" },
+                "alternativeText": { "type": "string", "maxLength": 2000 },
+                "description": { "type": "string", "maxLength": 4000 },
+                "placement": { "enum": ["INLINE", "FLOATING"] }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "presentationMathMl",
+                "privateOmmlSourceReference",
+                "conversionStatus"
+              ],
+              "properties": {
+                "type": { "const": "formula" },
+                "presentationMathMl": { "type": "string", "minLength": 1 },
+                "normalizedLinear": { "type": "string", "minLength": 1 },
+                "normalizedLatex": { "type": "string", "minLength": 1 },
+                "privateOmmlSourceReference": {
+                  "$ref": "#/$defs/privateReference"
+                },
+                "conversionStatus": {
+                  "enum": ["CONVERTED", "CONVERTED_WITH_WARNING", "BLOCKED"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/commonBlock" },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "shapeFamily",
+                "inlineContent",
+                "relatedAssetIds",
+                "placementRelationshipIds"
+              ],
+              "properties": {
+                "type": { "const": "shape" },
+                "shapeFamily": {
+                  "enum": [
+                    "TEXT_BOX",
+                    "SIMPLE_SHAPE",
+                    "LINE",
+                    "ARROW",
+                    "CONNECTOR",
+                    "PICTURE",
+                    "GROUP",
+                    "CANVAS"
+                  ]
+                },
+                "inlineContent": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/inlineContent" }
+                },
+                "relatedAssetIds": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/opaqueId" }
+                },
+                "placementRelationshipIds": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/opaqueId" }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId",
+        "tenantId",
+        "contentHash",
+        "physicalContentKey",
+        "mediaType",
+        "byteSize",
+        "privateObjectKey",
+        "validationStatus",
+        "sourceRelationshipLocator",
+        "retentionState",
+        "legalHold",
+        "referenceCount"
+      ],
+      "properties": {
+        "assetId": { "$ref": "#/$defs/opaqueId" },
+        "tenantId": { "$ref": "#/$defs/opaqueId" },
+        "contentHash": { "$ref": "#/$defs/sha256" },
+        "physicalContentKey": { "$ref": "#/$defs/privateReference" },
+        "mediaType": {
+          "type": "string",
+          "pattern": "^[a-z0-9.+-]+/[a-z0-9.+-]+$"
+        },
+        "byteSize": { "type": "integer", "minimum": 0 },
+        "widthPixels": { "type": "integer", "minimum": 1 },
+        "heightPixels": { "type": "integer", "minimum": 1 },
+        "privateObjectKey": { "$ref": "#/$defs/privateReference" },
+        "validationStatus": { "enum": ["VALID", "WARNING", "BLOCKED"] },
+        "sourceRelationshipLocator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "retentionState": {
+          "enum": [
+            "ACTIVE",
+            "RECOVERABLE_DELETION",
+            "DELETION_PENDING",
+            "DELETED"
+          ]
+        },
+        "legalHold": { "type": "boolean" },
+        "referenceCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationshipId", "type", "sourceBlockId"],
+      "properties": {
+        "relationshipId": { "$ref": "#/$defs/opaqueId" },
+        "type": {
+          "enum": [
+            "CONTAINS",
+            "PRECEDES",
+            "FOLLOWS",
+            "CAPTION_OF",
+            "LABELS",
+            "PLACED_WITH",
+            "GROUPS",
+            "CONNECTS_FROM",
+            "CONNECTS_TO"
+          ]
+        },
+        "sourceBlockId": { "$ref": "#/$defs/opaqueId" },
+        "targetBlockId": { "$ref": "#/$defs/opaqueId" },
+        "targetAssetId": { "$ref": "#/$defs/opaqueId" }
+      },
+      "oneOf": [
+        {
+          "required": ["targetBlockId"],
+          "properties": {
+            "targetBlockId": true,
+            "targetAssetId": false
+          }
+        },
+        {
+          "required": ["targetAssetId"],
+          "properties": {
+            "targetBlockId": false,
+            "targetAssetId": true
+          }
+        }
+      ]
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issueId",
+        "code",
+        "severity",
+        "category",
+        "safeSummary",
+        "downstreamPermitted",
+        "retryability",
+        "terminal",
+        "preservedWork",
+        "recommendedAction",
+        "parserVersion",
+        "schemaVersion",
+        "canonicalizationConfigVersion"
+      ],
+      "properties": {
+        "issueId": { "$ref": "#/$defs/opaqueId" },
+        "code": {
+          "enum": [
+            "SOURCE_VALIDATION_FAILED",
+            "SECURITY_VALIDATION_FAILED",
+            "CANONICAL_SCHEMA_INVALID",
+            "MEANINGFUL_CONTENT_ABSENT",
+            "SEMANTIC_ORDER_LOST",
+            "REQUIRED_IMAGE_MISSING",
+            "REQUIRED_TABLE_INVALID",
+            "FORMULA_CONVERSION_FAILED",
+            "REQUIRED_SHAPE_UNSUPPORTED",
+            "REQUIRED_RELATIONSHIP_BROKEN",
+            "MEANING_AFFECTING_CONTENT_LOSS",
+            "SEVERITY_AMBIGUOUS",
+            "PRESENTATION_ONLY_CONTENT_LOSS",
+            "DECORATIVE_SHAPE_LOSS"
+          ]
+        },
+        "severity": { "enum": ["BLOCKING_ERROR", "WARNING"] },
+        "category": {
+          "enum": [
+            "SOURCE",
+            "SECURITY",
+            "STRUCTURE",
+            "CONTENT",
+            "FORMULA",
+            "SHAPE",
+            "ASSET",
+            "RELATIONSHIP",
+            "SCHEMA"
+          ]
+        },
+        "safeSummary": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "sourceLocator": { "$ref": "#/$defs/sourceLocator" },
+        "affectedBlockId": { "$ref": "#/$defs/opaqueId" },
+        "affectedAssetId": { "$ref": "#/$defs/opaqueId" },
+        "downstreamPermitted": { "type": "boolean" },
+        "retryability": { "enum": ["NOT_RETRYABLE", "RETRYABLE"] },
+        "terminal": { "type": "boolean" },
+        "preservedWork": {
+          "enum": ["COMMITTED_STAGES_PRESERVED", "ALL_VALID_WORK_PRESERVED"]
+        },
+        "recommendedAction": {
+          "enum": ["REPLACE_DOCX", "RETRY", "CONTACT_SUPPORT", "REVIEW_WARNING"]
+        },
+        "parserVersion": { "$ref": "#/$defs/version" },
+        "schemaVersion": { "const": "1.0" },
+        "canonicalizationConfigVersion": { "$ref": "#/$defs/version" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": [
+                  "PRESENTATION_ONLY_CONTENT_LOSS",
+                  "DECORATIVE_SHAPE_LOSS"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "severity": { "const": "WARNING" },
+              "terminal": { "const": false }
+            }
+          },
+          "else": {
+            "properties": {
+              "severity": { "const": "BLOCKING_ERROR" },
+              "terminal": { "const": true }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": { "const": "SOURCE_VALIDATION_FAILED" }
+            }
+          },
+          "then": { "properties": { "category": { "const": "SOURCE" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": { "const": "SECURITY_VALIDATION_FAILED" }
+            }
+          },
+          "then": { "properties": { "category": { "const": "SECURITY" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": { "const": "CANONICAL_SCHEMA_INVALID" }
+            }
+          },
+          "then": { "properties": { "category": { "const": "SCHEMA" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": [
+                  "MEANINGFUL_CONTENT_ABSENT",
+                  "MEANING_AFFECTING_CONTENT_LOSS",
+                  "SEVERITY_AMBIGUOUS",
+                  "PRESENTATION_ONLY_CONTENT_LOSS"
+                ]
+              }
+            }
+          },
+          "then": { "properties": { "category": { "const": "CONTENT" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": ["SEMANTIC_ORDER_LOST", "REQUIRED_TABLE_INVALID"]
+              }
+            }
+          },
+          "then": { "properties": { "category": { "const": "STRUCTURE" } } }
+        },
+        {
+          "if": {
+            "properties": { "code": { "const": "REQUIRED_IMAGE_MISSING" } }
+          },
+          "then": { "properties": { "category": { "const": "ASSET" } } }
+        },
+        {
+          "if": {
+            "properties": { "code": { "const": "FORMULA_CONVERSION_FAILED" } }
+          },
+          "then": { "properties": { "category": { "const": "FORMULA" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": ["REQUIRED_SHAPE_UNSUPPORTED", "DECORATIVE_SHAPE_LOSS"]
+              }
+            }
+          },
+          "then": { "properties": { "category": { "const": "SHAPE" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": { "const": "REQUIRED_RELATIONSHIP_BROKEN" }
+            }
+          },
+          "then": {
+            "properties": { "category": { "const": "RELATIONSHIP" } }
+          }
+        },
+        {
+          "properties": {
+            "retryability": { "const": "NOT_RETRYABLE" }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": ["CANONICAL_SCHEMA_INVALID", "SEVERITY_AMBIGUOUS"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "recommendedAction": { "const": "CONTACT_SUPPORT" }
+            }
+          },
+          "else": {
+            "if": {
+              "properties": {
+                "code": {
+                  "enum": [
+                    "PRESENTATION_ONLY_CONTENT_LOSS",
+                    "DECORATIVE_SHAPE_LOSS"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "recommendedAction": { "const": "REVIEW_WARNING" }
+              }
+            },
+            "else": {
+              "properties": {
+                "recommendedAction": { "const": "REPLACE_DOCX" }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "severity": { "const": "WARNING" }
+            }
+          },
+          "then": {
+            "properties": {
+              "preservedWork": { "const": "ALL_VALID_WORK_PRESERVED" }
+            }
+          },
+          "else": {
+            "properties": {
+              "preservedWork": { "const": "COMMITTED_STAGES_PRESERVED" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "severity": { "const": "BLOCKING_ERROR" } } },
+          "then": {
+            "properties": { "downstreamPermitted": { "const": false } }
+          }
+        },
+        {
+          "if": { "properties": { "severity": { "const": "WARNING" } } },
+          "then": { "properties": { "downstreamPermitted": { "const": true } } }
+        }
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ingestionAttemptId", "correlationId", "createdAt"],
+      "properties": {
+        "ingestionAttemptId": { "$ref": "#/$defs/opaqueId" },
+        "correlationId": { "$ref": "#/$defs/opaqueId" },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "priorCanonicalDocumentId": { "$ref": "#/$defs/opaqueId" },
+        "migrationReasonCode": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+        }
+      }
+    }
+  }
+}

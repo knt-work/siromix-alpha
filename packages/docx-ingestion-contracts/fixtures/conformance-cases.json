@@ -1,0 +1,312 @@
+{
+  "schemaVersion": "1.0",
+  "cases": [
+    {
+      "name": "canonical-minimal-valid",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.minimal.valid.json",
+      "valid": true
+    },
+    {
+      "name": "canonical-maximal-valid",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": true
+    },
+    {
+      "name": "attempt-valid",
+      "contract": "ingestionAttempt",
+      "file": "ingestion-attempt-1.0.valid.json",
+      "valid": true
+    },
+    {
+      "name": "handoff-valid",
+      "contract": "ingestionHandoff",
+      "file": "handoff-1.0.minimal.valid.json",
+      "valid": true
+    },
+    {
+      "name": "canonical-unknown-field",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.minimal.valid.json",
+      "valid": false,
+      "mutations": [{ "op": "set", "path": "/unknownField", "value": true }]
+    },
+    {
+      "name": "canonical-unknown-block",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.minimal.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/blocks/0/type", "value": "unknown" }
+      ]
+    },
+    {
+      "name": "canonical-invalid-private-object-url",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/assetReferences/0/privateObjectKey",
+          "value": "https://storage.example/file?token=secret"
+        }
+      ]
+    },
+    {
+      "name": "canonical-invalid-physical-path",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/assetReferences/0/physicalContentKey",
+          "value": "C:\\temp\\asset.png"
+        }
+      ]
+    },
+    {
+      "name": "canonical-invalid-uppercase-private-url",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/assetReferences/0/privateObjectKey",
+          "value": "HTTPS://storage.example/file?TOKEN=secret"
+        }
+      ]
+    },
+    {
+      "name": "canonical-invalid-omml-reference",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/blocks/8/privateOmmlSourceReference",
+          "value": "/tmp/formula.xml"
+        }
+      ]
+    },
+    {
+      "name": "canonical-empty-formula",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/blocks/8/presentationMathMl", "value": "" }
+      ]
+    },
+    {
+      "name": "canonical-heading-level-out-of-range",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [{ "op": "set", "path": "/blocks/0/level", "value": 0 }]
+    },
+    {
+      "name": "canonical-list-requires-item",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/blocks/2/itemBlockIds", "value": [] }
+      ]
+    },
+    {
+      "name": "canonical-table-requires-row",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/blocks/4/rowBlockIds", "value": [] }
+      ]
+    },
+    {
+      "name": "canonical-cell-span-positive",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [{ "op": "set", "path": "/blocks/6/rowSpan", "value": 0 }]
+    },
+    {
+      "name": "canonical-image-placement-enum",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/blocks/7/placement", "value": "ABSOLUTE" }
+      ]
+    },
+    {
+      "name": "canonical-shape-family-enum",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/blocks/9/shapeFamily", "value": "SMART_ART" }
+      ]
+    },
+    {
+      "name": "canonical-block-id-required",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [{ "op": "delete", "path": "/blocks/1/blockId" }]
+    },
+    {
+      "name": "canonical-asset-byte-size-is-number",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/assetReferences/0/byteSize", "value": "1024" }
+      ]
+    },
+    {
+      "name": "canonical-warning-cannot-block-downstream",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/issues/0/downstreamPermitted", "value": false }
+      ]
+    },
+    {
+      "name": "canonical-warning-code-cannot-be-blocking",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/issues/0/severity",
+          "value": "BLOCKING_ERROR"
+        },
+        {
+          "op": "set",
+          "path": "/issues/0/downstreamPermitted",
+          "value": false
+        },
+        { "op": "set", "path": "/issues/0/terminal", "value": true }
+      ]
+    },
+    {
+      "name": "canonical-relationship-two-targets",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.maximal.valid.json",
+      "valid": false,
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/relationships/0/targetAssetId",
+          "value": "asset:image"
+        }
+      ]
+    },
+    {
+      "name": "canonical-naive-created-at",
+      "contract": "canonicalDocument",
+      "file": "canonical-document-1.0.minimal.valid.json",
+      "valid": false,
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/provenance/createdAt",
+          "value": "2026-07-31T00:00:00"
+        }
+      ]
+    },
+    {
+      "name": "attempt-unknown-status",
+      "contract": "ingestionAttempt",
+      "file": "ingestion-attempt-1.0.valid.json",
+      "valid": false,
+      "mutations": [{ "op": "set", "path": "/status", "value": "UNKNOWN" }]
+    },
+    {
+      "name": "attempt-sequence-is-number",
+      "contract": "ingestionAttempt",
+      "file": "ingestion-attempt-1.0.valid.json",
+      "valid": false,
+      "mutations": [{ "op": "set", "path": "/sequence", "value": "1" }]
+    },
+    {
+      "name": "attempt-naive-stage-time",
+      "contract": "ingestionAttempt",
+      "file": "ingestion-attempt-1.0.valid.json",
+      "valid": false,
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/stageTimestamps/RECEIVED",
+          "value": "2026-07-31T00:00:00"
+        }
+      ]
+    },
+    {
+      "name": "attempt-invalid-metric-name",
+      "contract": "ingestionAttempt",
+      "file": "ingestion-attempt-1.0.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/metrics/Invalid-Metric", "value": 1 }
+      ]
+    },
+    {
+      "name": "attempt-negative-metric",
+      "contract": "ingestionAttempt",
+      "file": "ingestion-attempt-1.0.valid.json",
+      "valid": false,
+      "mutations": [{ "op": "set", "path": "/metrics/durationMs", "value": -1 }]
+    },
+    {
+      "name": "handoff-cancelled-not-consumable",
+      "contract": "ingestionHandoff",
+      "file": "handoff-1.0.minimal.valid.json",
+      "valid": false,
+      "mutations": [{ "op": "set", "path": "/status", "value": "CANCELLED" }]
+    },
+    {
+      "name": "handoff-version-is-string",
+      "contract": "ingestionHandoff",
+      "file": "handoff-1.0.minimal.valid.json",
+      "valid": false,
+      "mutations": [{ "op": "set", "path": "/handoffVersion", "value": 1 }]
+    },
+    {
+      "name": "handoff-invalid-media-type",
+      "contract": "ingestionHandoff",
+      "file": "handoff-1.0.minimal.valid.json",
+      "valid": false,
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/assetReferences",
+          "value": [
+            {
+              "assetId": "asset:1",
+              "mediaType": "not a media type",
+              "byteSize": 1,
+              "validationStatus": "VALID"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "handoff-unknown-field",
+      "contract": "ingestionHandoff",
+      "file": "handoff-1.0.minimal.valid.json",
+      "valid": false,
+      "mutations": [
+        { "op": "set", "path": "/temporaryPath", "value": "temp.docx" }
+      ]
+    }
+  ]
+}

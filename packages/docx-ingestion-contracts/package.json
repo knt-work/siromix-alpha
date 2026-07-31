@@ -1,0 +1,18 @@
+{
+  "name": "@siromix/docx-ingestion-contracts",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "contracts:check": "tsx scripts/check-contracts.ts"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "2.1.1",
+    "zod": "4.1.5"
+  },
+  "devDependencies": {
+    "tsx": "4.20.5"
+  }
+}

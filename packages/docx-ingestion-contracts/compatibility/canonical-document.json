@@ -1,0 +1,20 @@
+{
+  "contracts": {
+    "canonicalDocument": "urn:siromix:docx-ingestion:canonical-document:1.0",
+    "ingestionAttempt": "urn:siromix:docx-ingestion:ingestion-attempt:1.0",
+    "ingestionHandoff": "urn:siromix:docx-ingestion:ingestion-handoff:1.0",
+    "issueTaxonomy": "urn:siromix:docx-ingestion:issue-taxonomy:1.0"
+  },
+  "currentVersion": "1.0",
+  "supportedReaderVersions": ["1.0"],
+  "supportedWriterVersions": ["1.0"],
+  "unknownVersionPolicy": "REJECT",
+  "unknownFieldPolicy": "REJECT",
+  "unknownBlockTypePolicy": "REJECT",
+  "compatibilityRules": {
+    "breakingRepresentationChange": "NEW_SCHEMA_VERSION_REQUIRED",
+    "persistedVersionMutability": "IMMUTABLE",
+    "migrationMode": "NEW_LINKED_CANONICAL_DOCUMENT_VERSION",
+    "implicitFallbackConversion": "PROHIBITED"
+  }
+}

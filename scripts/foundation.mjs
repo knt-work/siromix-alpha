@@ -300,10 +300,7 @@ function stopApplications() {
 }
 
 function migrate() {
-  run(
-    packageRunner,
-    pnpmArguments(["--filter", "@siromix/database", "prisma:migrate"]),
-  );
+  run(packageRunner, pnpmArguments(["db:migrate"]));
 }
 
 function start() {
